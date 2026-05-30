@@ -139,6 +139,23 @@ document.addEventListener('DOMContentLoaded', () => {
       btnAuthAction.innerHTML = `<i data-lucide="log-in" style="width:14px; height:14px;"></i> Acceso Editor`;
     }
     
+    // Mostrar u ocultar pestañas exclusivas del editor (Liquidación y Ajustes)
+    const editorNavs = document.querySelectorAll('.editor-only-nav');
+    editorNavs.forEach(nav => {
+      nav.style.display = isPedroEditor ? 'block' : 'none';
+    });
+
+    // Redirección si un invitado intenta estar en una vista restringida
+    if (!isPedroEditor) {
+      const activeView = document.querySelector('.view-section.active');
+      if (activeView && (activeView.id === 'conciliacion-view' || activeView.id === 'config-view')) {
+        const dashboardLink = document.getElementById('nav-dashboard');
+        if (dashboardLink) {
+          cambiarVista('dashboard-view', dashboardLink);
+        }
+      }
+    }
+    
     actualizarControlesEdicion(isPedroEditor);
     lucide.createIcons();
   }
@@ -355,6 +372,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- NAVEGACIÓN ---
   function cambiarVista(viewId, activeLink) {
+    // Validar acceso restringido a vistas de editor (Liquidación y Ajustes)
+    if ((viewId === 'conciliacion-view' || viewId === 'config-view') && !isPedroEditor) {
+      alert("Acceso restringido. Debes iniciar sesión como Editor para acceder a esta sección.");
+      const dashboardLink = document.getElementById('nav-dashboard');
+      if (dashboardLink) {
+        cambiarVista('dashboard-view', dashboardLink);
+      }
+      return;
+    }
+
     // Desactivar todos los enlaces y secciones
     navLinks.forEach(link => link.classList.remove('active'));
     viewSections.forEach(sec => sec.classList.remove('active'));
