@@ -30,29 +30,46 @@ Esta hoja de ruta detalla la estrategia de evolución técnica y de negocio de *
 
 ---
 
-## 📊 Fase 3: Conciliación Bancaria Inteligente (Mediano Plazo)
-*Objetivo: Reducir la introducción manual de datos y digitalizar los desgloses mediante ficheros bancarios.*
+## 💵 Fase 3: Conciliación Bancaria y Liquidación del Día 15 (Completada)
+*Objetivo: Controlar el saldo real en la cuenta común al final del día 15 para salvaguardar el fondo de fianza acumulado y liquidar el saldo sobrante a favor de Pedro (manutención de Olga y otros conceptos) o reponer déficits.*
 
-* [ ] **Módulo Parser de Extractos Bancarios**:
-  * Permitir arrastrar extractos bancarios en PDF o ficheros de Norma 43 (formato de banca estándar en España).
-  * Extraer automáticamente los importes reales de la Hipoteca, el ingreso de Alquiler y la Comunidad.
-* [ ] **Conciliación Presupuestaria**:
-  * Comparar automáticamente los gastos calculados por la aplicación con los movimientos bancarios reales, detectando variaciones de céntimos o cobros extras de comunidad.
+* [x] **Módulo de Liquidación**:
+  * Pestaña dedicada en la barra lateral e interfaz responsiva con tarjeta resumen.
+  * Captura del Saldo Real del Banco el día 15 ($S_R$).
+  * Comparación contra el ahorro de la fianza acumulada de ese mes ($F_A$).
+* [x] **Lógica de Aportación/Retiro (Pedro)**:
+  * Cálculo de la diferencia $D = S_R - F_A$.
+  * Mensaje dinámico con instrucciones en español para Pedro indicando si debe retirar un sobrante a su cuenta personal o aportar un déficit de su dinero propio.
+* [x] **Persistencia en la Nube e Historial**:
+  * Tabla SQL `conciliaciones` en Supabase con políticas RLS de lectura anónima y escritura de editor.
+  * Persistencia asíncrona híbrida con LocalStorage `commonpay_conciliaciones`.
+  * Historial interactivo de liquidaciones con badges de estado y opción de borrado seguro.
 
 ---
 
-## 🔔 Fase 4: Notificaciones y Canales Compartidos (Largo Plazo)
+## 📊 Fase 4: Parser de Extractos Bancarios y Conciliación Inteligente (Mediano Plazo)
+*Objetivo: Reducir la introducción manual de datos y digitalizar los desgloses mediante ficheros bancarios.*
+
+* [ ] **Parser de Extractos**:
+  * Permitir arrastrar extractos bancarios en PDF o ficheros de Norma 43 (formato de banca estándar en España).
+  * Extraer automáticamente los importes reales de la Hipoteca, el ingreso de Alquiler y la Comunidad.
+* [ ] **Conciliación Presupuestaria Avanzada**:
+  * Comparar automáticamente los gastos calculados por la aplicación con los movimientos bancarios reales, detectando variaciones de céntimos o cobros extras de comunidad de forma automática.
+
+---
+
+## 🔔 Fase 5: Notificaciones y Canales Compartidos (Largo Plazo)
 *Objetivo: Integrar las finanzas del hogar en los canales de comunicación cotidianos de la pareja.*
 
 * [ ] **Integración con Telegram (Bot)**:
   * Enviar un mensaje automático al grupo de Telegram de la pareja el día 1 de cada mes con los montos exactos que debe transferir cada uno.
-  * Notificar a la pareja en tiempo real en Telegram cuando uno de los dos pulse "Transferencia realizada".
+  * Notificar a la pareja en tiempo real en Telegram cuando uno de los dos pulse "Transferencia realizada" o cuando Pedro registre la liquidación.
 * [ ] **Recordatorios Inteligentes**:
   * Notificación amigable si llega el día 10 del mes y la transferencia aún no ha sido marcada como completada.
 
 ---
 
-## 🧠 Fase 5: Inteligencia de Ahorro y Predicciones (Futuro)
+## 🧠 Fase 6: Inteligencia de Ahorro y Predicciones (Futuro)
 *Objetivo: Ofrecer análisis avanzados del comportamiento del gasto y previsiones financieras a largo plazo.*
 
 * [ ] **Previsión de Suministros Variables**:

@@ -1165,3 +1165,178 @@ tr:hover td {
   to { transform: scale(1); opacity: 1; }
 }
 
+/* --- CONCILIACIÓN Y LIQUIDACIÓN DÍA 15 (FASE 3) --- */
+.balance-card {
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  transition: all 0.3s ease;
+}
+
+.balance-card.sobrante {
+  background: rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.balance-card.deficit {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.balance-card.equilibrado {
+  background: rgba(79, 70, 229, 0.08);
+  border-color: rgba(79, 70, 229, 0.3);
+}
+
+.balance-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.balance-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.balance-card.sobrante .balance-icon {
+  background-color: var(--success);
+  color: white;
+}
+
+.balance-card.deficit .balance-icon {
+  background-color: var(--danger);
+  color: white;
+}
+
+.balance-card.equilibrado .balance-icon {
+  background-color: var(--primary);
+  color: white;
+}
+
+.balance-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.balance-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.balance-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.balance-value-label {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.balance-value-amount {
+  font-family: 'Outfit', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.balance-card.sobrante .balance-value-amount {
+  color: var(--success);
+}
+
+.balance-card.deficit .balance-value-amount {
+  color: var(--danger);
+}
+
+.balance-card.equilibrado .balance-value-amount {
+  color: var(--primary);
+}
+
+.balance-instruction-box {
+  background: var(--bg-app);
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--border-color);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-main);
+}
+
+.balance-card.sobrante .balance-instruction-box {
+  border-left-color: var(--success);
+}
+
+.balance-card.deficit .balance-instruction-box {
+  border-left-color: var(--danger);
+}
+
+.balance-card.equilibrado .balance-instruction-box {
+  border-left-color: var(--primary);
+}
+
+.balance-instruction-box strong {
+  color: var(--text-main);
+}
+
+.badge-conciliacion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border-radius: 50px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-conciliacion.sobrante {
+  background-color: var(--success-light);
+  color: var(--success);
+}
+
+.badge-conciliacion.deficit {
+  background-color: var(--danger-light);
+  color: var(--danger);
+}
+
+.badge-conciliacion.equilibrado {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.btn-danger-link {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-danger-link:hover {
+  background-color: var(--danger-light);
+}
+
+.btn-danger-link:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: none;
+}
+
+

@@ -8,11 +8,12 @@ CommonPay es una aplicación web responsiva e interactiva diseñada para la gest
 
 * **Dashboard Mensual**: Selector del mes en curso con recálculo dinámico automático de transferencias y desgloses de conceptos.
 * **Fondo de Fianza**: Barra de progreso interactiva para reponer una meta de **450,00 €** (aportaciones mensuales automáticas de 20,00 € o aportes extraordinarios manuales) con control para no superar el límite.
-* **Estadísticas Anuales**: Gráfico interactiva anual de evolución de gastos construida con **Chart.js**.
+* **Liquidación del Día 15**: Módulo de conciliación bancaria para comparar el saldo real de la cuenta común con la fianza acumulada ($F_A$). Calcula sobrantes (que Pedro retira para cubrir gastos, incluyendo la manutención de Olga) o déficits a aportar para proteger la fianza.
+* **Estadísticas Anuales**: Gráfico interactivo anual de evolución de gastos construido con **Chart.js**.
 * **Historial Completo**: Registro ordenado de meses completados con posibilidad de deshacer transferencias.
 * **Ajustes Editables**: Panel para configurar importes de hipoteca, comunidad, alquiler, gastos extraordinarios (IBI, seguro) y gastos personales sin tocar código.
 * **Exportación Profesional**: Descarga de reportes mensuales en **PDF** (usando `html2pdf.js`) y descarga de históricos en **Excel (XLSX)** (usando `SheetJS`).
-* **Diseño Premium**: Interfaz responsive y estética de tipo Glassmorphism con soporte nativo de **Modo Oscuro** / **Claro**.
+* **Diseño Premium**: Interfaz responsive y estética de tipo Glassmorphism con soporte nativo de **Modo Oscuro** / **Claro** y acceso restringido de solo lectura para invitados.
 
 ---
 
@@ -58,7 +59,7 @@ La aplicación está diseñada con un **motor de persistencia híbrido**:
 
 #### Paso A: Inicializar base de datos en Supabase
 1. Crea un proyecto gratuito en [Supabase](https://supabase.com/).
-2. Ve al panel de **SQL Editor** de Supabase y ejecuta las consultas de inicialización que se detallan en el manual de entrega [walkthrough.md](file:///C:/Users/Usuario/.gemini/antigravity-ide/brain/301c2226-73ee-4d88-9da3-8ed84868b0af/walkthrough.md) para estructurar las tablas (`configuracion`, `historial_transferencias` y `fianza_estado`) y activar Row Level Security (RLS).
+2. Ve al panel de **SQL Editor** de Supabase y ejecuta las consultas de inicialización que se detallan en el manual de entrega [walkthrough.md](file:///C:/Users/Usuario/.gemini/antigravity-ide/brain/301c2226-73ee-4d88-9da3-8ed84868b0af/walkthrough.md) para estructurar las tablas (`configuracion`, `historial_transferencias`, `fianza_estado` y `conciliaciones`) y activar Row Level Security (RLS).
 3. En la sección **Auth -> Users** de Supabase, añade un usuario para Pedro (con su correo y contraseña). Desactiva los registros públicos en la configuración de autenticación de Supabase para evitar registros externos.
 
 #### Paso B: Desplegar en Vercel

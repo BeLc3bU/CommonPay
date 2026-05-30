@@ -54,6 +54,11 @@
               </a>
             </li>
             <li class="nav-item">
+              <a class="nav-link" data-target="conciliacion-view" id="nav-conciliacion">
+                <i data-lucide="scale"></i> Liquidación (15)
+              </a>
+            </li>
+            <li class="nav-item">
               <a class="nav-link" data-target="config-view" id="nav-config">
                 <i data-lucide="settings"></i> Ajustes
               </a>
@@ -525,6 +530,84 @@
           <button class="btn btn-primary" id="btn-config-guardar">
             <i data-lucide="save"></i> Guardar Ajustes
           </button>
+        </div>
+
+      </section>
+
+      <!-- SECCIÓN 6: LIQUIDACIÓN / CONCILIACIÓN DEL DÍA 15 -->
+      <section id="conciliacion-view" class="view-section">
+        <div class="fianza-container" style="grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+          
+          <!-- TARJETA FIANZA TEÓRICA -->
+          <div class="glass-card">
+            <h3 class="form-group-title" style="margin-bottom: 0.75rem;"><i data-lucide="piggy-bank" style="color: var(--text-muted);"></i> Ahorro Fianza Comprometido</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5;">
+              Este es el saldo teórico acumulado del fondo de fianza en el sistema para el mes seleccionado. La cuenta común el día 15 debe salvaguardar exactamente este importe de ahorro común.
+            </p>
+            
+            <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 0.75rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Mes Seleccionado:</span>
+                <strong id="con-mes-nombre" style="color: var(--text-main); font-size: 1rem;">-</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 0.75rem;">
+                <span style="color: var(--text-muted); font-weight: 500;">Fondo Acumulado:</span>
+                <strong id="con-fianza-esperada" style="color: var(--success); font-size: 1.25rem; font-family: 'Outfit', sans-serif;">0,00 €</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- ENTRADA SALDO REAL -->
+          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <h3 class="form-group-title" style="margin-bottom: 0.75rem;"><i data-lucide="wallet" style="color: var(--text-muted);"></i> Balance Real del Banco</h3>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5;">
+                Introduce el saldo total reflejado en la cuenta común al final del día 15 de este mes para liquidar.
+              </p>
+              
+              <div class="form-row" style="margin-bottom: 1.5rem;">
+                <label class="form-label" for="con-saldo-real" style="font-weight:600; display: block; margin-bottom: 0.5rem;">Saldo en Cuenta Común (el día 15)</label>
+                <div class="input-wrapper" style="width: 100%;">
+                  <input type="number" id="con-saldo-real" class="input-control editor-only-control" step="0.01" min="0" placeholder="0.00" style="width: 100%; font-size: 1.1rem; padding: 0.75rem;">
+                  <span class="input-suffix" style="padding: 0.75rem 1rem;">€</span>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn-primary editor-only-control" id="btn-calcular-balance" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+              <i data-lucide="scale"></i> Calcular Balance de Liquidación
+            </button>
+          </div>
+
+        </div>
+
+        <!-- PANEL DE RESULTADOS DE LIQUIDACIÓN -->
+        <div id="resultado-conciliacion" class="glass-card" style="display: none; margin-bottom: 2.5rem; animation: fadeIn 0.3s ease-out; padding: 1.75rem;">
+          <!-- Aquí se inyectará el balance calculado -->
+        </div>
+
+        <!-- TABLA HISTORIAL DE CONCILIACIONES -->
+        <div class="glass-card">
+          <h3 class="form-group-title" style="margin-bottom: 1.25rem;"><i data-lucide="history" style="color: var(--text-muted);"></i> Historial de Liquidaciones (Día 15)</h3>
+          
+          <div class="table-responsive" style="overflow-x: auto;">
+            <table class="table" id="tabla-conciliaciones" style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr style="border-bottom: 2px solid var(--border-color); text-align: left; font-size: 0.9rem;">
+                  <th style="padding: 0.75rem 0.5rem; font-weight: 600;">Periodo</th>
+                  <th style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 600;">Saldo Real</th>
+                  <th style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 600;">Fianza</th>
+                  <th style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 600;">Resultado</th>
+                  <th style="padding: 0.75rem 0.5rem; font-weight: 600;">Fecha Registro</th>
+                  <th style="padding: 0.75rem 0.5rem; font-weight: 600;">Estado</th>
+                  <th style="padding: 0.75rem 0.5rem; text-align: center; width: 60px; font-weight: 600;">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-conciliaciones-body">
+                <!-- Se inyectan con js -->
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </section>

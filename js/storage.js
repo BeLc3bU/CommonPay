@@ -398,6 +398,139 @@ async function deleteTransferenciaDelHistorial(mesIndex, anio) {
   saveHistorialLocal(historial);
 }
 
+const CONCILIACIONES_KEY = 'commonpay_conciliaciones';
+
+// --- UTILERÍAS DE MAPEO PARA CONCILIACIONES ---
+function mapearConciliacionAJs(dbRow) {
+  return {
+    id: dbRow.id,
+    mesIndex: dbRow.mes_index,
+    mesNombre: dbRow.mes_nombre,
+    anio: dbRow.anio,
+    saldoReal: parseFloat(dbRow.saldo_real),
+    fianzaAcumulada: parseFloat(dbRow.fianza_acumulada),
+    diferencia: parseFloat(dbRow.diferencia),
+    tipo: dbRow.tipo,
+    fecha: dbRow.fecha
+  };
+}
+
+function mapearConciliacionADb(jsRow) {
+  return {
+    mes_index: jsRow.mesIndex,
+    mes_nombre: jsRow.mesNombre,
+    anio: jsRow.anio,
+    saldo_real: jsRow.saldoReal,
+    fianza_acumulada: jsRow.fianzaAcumulada,
+    diferencia: jsRow.diferencia,
+    tipo: jsRow.tipo,
+    fecha: jsRow.fecha || new Date().toISOString()
+  };
+}
+
+/**
+ * Obtiene el historial de conciliaciones/liquidaciones desde Supabase o LocalStorage.
+ */
+async function getConciliaciones() {
+  if (isSupabaseActive) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('conciliaciones')
+        .select('*')
+        .order('anio', { ascending: false })
+        .order('mes_index', { ascending: false });
+
+      if (error) throw error;
+      return (data || []).map(mapearConciliacionAJs);
+    } catch (err) {
+      console.error("Error al leer conciliaciones de Supabase. Usando LocalStorage:", err);
+    }
+  }
+
+  // Fallback LocalStorage
+  const data = localStorage.getItem(CONCILIACIONES_KEY);
+  if (!data) {
+    localStorage.setItem(CONCILIACIONES_KEY, JSON.stringify([]));
+    return [];
+  }
+  try {
+    return JSON.parse(data);
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
+ * Añade una conciliación al historial.
+ */
+async function addConciliacion(conciliacion) {
+  const lista = await getConciliaciones();
+  const existe = lista.some(
+    c => c.mesIndex === conciliacion.mesIndex && c.anio === conciliacion.anio
+  );
+
+  if (existe) {
+    return false; // Ya registrado
+  }
+
+  if (isSupabaseActive) {
+    try {
+      const user = await obtenerUsuarioActivo();
+      if (!user) {
+        throw new Error("No tienes permisos de edición. Inicia sesión primero.");
+      }
+
+      const dbRow = mapearConciliacionADb(conciliacion);
+      const { error } = await supabaseClient
+        .from('conciliaciones')
+        .insert(dbRow);
+
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error("Error al añadir conciliación en Supabase:", err);
+      throw err;
+    }
+  }
+
+  // Fallback LocalStorage
+  conciliacion.id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9);
+  conciliacion.fecha = conciliacion.fecha || new Date().toISOString();
+  lista.push(conciliacion);
+  localStorage.setItem(CONCILIACIONES_KEY, JSON.stringify(lista));
+  return true;
+}
+
+/**
+ * Elimina una conciliación por ID en Supabase, o por mes y año en LocalStorage.
+ */
+async function deleteConciliacion(id, mesIndex, anio) {
+  if (isSupabaseActive) {
+    try {
+      const user = await obtenerUsuarioActivo();
+      if (!user) {
+        throw new Error("No tienes permisos de edición. Inicia sesión primero.");
+      }
+
+      const { error } = await supabaseClient
+        .from('conciliaciones')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      return;
+    } catch (err) {
+      console.error("Error al eliminar conciliación en Supabase:", err);
+      throw err;
+    }
+  }
+
+  // Fallback LocalStorage
+  let lista = await getConciliaciones();
+  lista = lista.filter(c => !(c.mesIndex === mesIndex && c.anio === anio));
+  localStorage.setItem(CONCILIACIONES_KEY, JSON.stringify(lista));
+}
+
 /**
  * Obtiene el tema guardado localmente ('light' o 'dark').
  */
@@ -426,6 +559,9 @@ window.StorageModule = {
   getHistorial,
   addTransferenciaAlHistorial,
   deleteTransferenciaDelHistorial,
+  getConciliaciones,
+  addConciliacion,
+  deleteConciliacion,
   getTheme,
   saveTheme
 };

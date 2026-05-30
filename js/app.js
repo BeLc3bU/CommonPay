@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let appConfig = {};
   let fianzaAcumulado = 0.0;
   let historialTransferencias = [];
+  let conciliaciones = [];
   let currentMonthIndex = new Date().getMonth(); // Mes actual del sistema
   const currentAnio = 2026; // Año de trabajo por defecto
   let miGrafico = null; // Instancia del gráfico Chart.js
@@ -105,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
     appConfig = await window.StorageModule.getConfiguration();
     fianzaAcumulado = await window.StorageModule.getFianzaAcumulado();
     historialTransferencias = await window.StorageModule.getHistorial();
+    conciliaciones = await window.StorageModule.getConciliaciones();
 
     // 4. Establecer mes por defecto
     selectorMesGlobal.value = currentMonthIndex;
@@ -143,19 +145,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function actualizarControlesEdicion(isEditor) {
     // Inputs del panel de ajustes
+    const conSaldoReal = document.getElementById('con-saldo-real');
     const inputsAjustes = [
       cfgHipotecaCuota, cfgHipotecaAlquiler, cfgComunidad, 
       cfgFianzaObjetivo, cfgFianzaMensual, cfgOlgaCoche, 
       cfgOlgaManutencion, cfgExtraIbi, cfgExtraSeguro,
       cfgAlertaHipoteca, cfgAlertaManutencion, cfgAlertaAlquiler,
       cfgHipotecaNueva, cfgIpcTasa, cfgIravTasa,
-      inputAportacionExtra
+      inputAportacionExtra, conSaldoReal
     ];
 
     // Botones de acción del sistema
+    const btnCalcularBalance = document.getElementById('btn-calcular-balance');
     const botonesEdicion = [
       btnCompletarMes, btnAportarManual, btnRetirarManual,
-      btnConfigReset, btnConfigGuardar
+      btnConfigReset, btnConfigGuardar, btnCalcularBalance
     ];
 
     // Habilitar o deshabilitar inputs
@@ -215,6 +219,12 @@ document.addEventListener('DOMContentLoaded', () => {
     selectorMesGlobal.addEventListener('change', (e) => {
       currentMonthIndex = parseInt(e.target.value);
       actualizarDashboardMes();
+      
+      // Si la sección de conciliación está activa, actualizarla
+      const activeView = document.querySelector('.view-section.active');
+      if (activeView && activeView.id === 'conciliacion-view') {
+        actualizarVistaConciliacion();
+      }
     });
 
     // Conmutador de tema
@@ -245,6 +255,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Exportación a Excel
     btnExportarExcel.addEventListener('click', exportarExcelHistorial);
+
+    // Conciliación del día 15
+    const btnCalcularBalance = document.getElementById('btn-calcular-balance');
+    if (btnCalcularBalance) {
+      btnCalcularBalance.addEventListener('click', calcularConciliacion);
+    }
 
     // Guardar ajustes
     btnConfigGuardar.addEventListener('click', guardarAjustes);
@@ -375,6 +391,11 @@ document.addEventListener('DOMContentLoaded', () => {
       pageSubtitle.innerText = "Edita los importes y gastos del sistema sin tocar código.";
       monthSelectorContainer.style.display = 'none';
       cargarInputsConfiguracion();
+    } else if (viewId === 'conciliacion-view') {
+      pageTitle.innerText = "Liquidación y Conciliación";
+      pageSubtitle.innerText = "Controla el saldo del día 15, salvaguarda la fianza y liquida diferencias.";
+      monthSelectorContainer.style.display = 'flex';
+      actualizarVistaConciliacion();
     }
 
     // Refrescar iconos y aplicar seguridad a controles
@@ -388,6 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
     actualizarVistaFianza();
     actualizarVistaHistorial();
     actualizarEstadisticasResumen();
+    actualizarTablaConciliaciones();
   }
 
   // --- LÓGICA VISTA: DASHBOARD ---
@@ -1142,6 +1164,266 @@ document.addEventListener('DOMContentLoaded', () => {
     worksheet['!cols'] = wscols;
 
     XLSX.writeFile(workbook, `CommonPay_Historial_Gastos_2026.xlsx`);
+  }
+
+  // --- LÓGICA VISTA: LIQUIDACIÓN Y CONCILIACIÓN (DÍA 15 - FASE 3) ---
+
+  function obtenerFianzaAcumuladaParaMes(mesIndex, anio) {
+    const registro = historialTransferencias.find(t => t.mesIndex === mesIndex && t.anio === anio);
+    if (registro) {
+      return registro.fianzaAlMomento;
+    }
+    return fianzaAcumulado;
+  }
+
+  function actualizarVistaConciliacion() {
+    const fianzaEsp = obtenerFianzaAcumuladaParaMes(currentMonthIndex, currentAnio);
+    document.getElementById('con-mes-nombre').innerText = `${NOMBRES_MESES[currentMonthIndex]} / ${currentAnio}`;
+    document.getElementById('con-fianza-esperada').innerText = `${formatMoneda(fianzaEsp)} €`;
+    
+    // Limpiar input y resultado previo
+    document.getElementById('con-saldo-real').value = '';
+    const panelResultado = document.getElementById('resultado-conciliacion');
+    panelResultado.style.display = 'none';
+    panelResultado.innerHTML = '';
+
+    actualizarTablaConciliaciones();
+  }
+
+  function actualizarTablaConciliaciones() {
+    const tbody = document.getElementById('tabla-conciliaciones-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    if (!conciliaciones || conciliaciones.length === 0) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="empty-state" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+            <i data-lucide="inbox" style="width: 32px; height: 32px; display: block; margin: 0 auto 0.5rem; opacity: 0.5;"></i>
+            Aún no hay liquidaciones del día 15 registradas.
+          </td>
+        </tr>
+      `;
+      lucide.createIcons();
+      return;
+    }
+
+    // Ordenar por año desc, mes desc
+    const listaOrdenada = [...conciliaciones].sort((a, b) => {
+      if (a.anio !== b.anio) return b.anio - a.anio;
+      return b.mesIndex - a.mesIndex;
+    });
+
+    listaOrdenada.forEach(c => {
+      const row = document.createElement('tr');
+      row.style.borderBottom = '1px solid var(--border-color)';
+      
+      const fechaObj = new Date(c.fecha);
+      const fechaFormateada = `${agregarCero(fechaObj.getDate())}/${agregarCero(fechaObj.getMonth() + 1)}/${fechaObj.getFullYear()}`;
+
+      let badgeClass = '';
+      let badgeText = '';
+      let difTexto = '';
+
+      if (c.tipo === 'sobrante_retirado') {
+        badgeClass = 'sobrante';
+        badgeText = 'Sobrante Retirado';
+        difTexto = `+${formatMoneda(c.diferencia)} €`;
+      } else if (c.tipo === 'deficit_repuesto') {
+        badgeClass = 'deficit';
+        badgeText = 'Déficit Repuesto';
+        difTexto = `${formatMoneda(c.diferencia)} €`;
+      } else {
+        badgeClass = 'equilibrado';
+        badgeText = 'Equilibrado';
+        difTexto = '0,00 €';
+      }
+
+      const diffColorClass = c.diferencia > 0 ? 'text-success' : (c.diferencia < 0 ? 'text-danger' : 'text-primary');
+
+      row.innerHTML = `
+        <td style="padding: 1rem 0.5rem; font-weight: 600;">${c.mesNombre} / ${c.anio}</td>
+        <td style="padding: 1rem 0.5rem; text-align: right; font-weight: 500;">${formatMoneda(c.saldoReal)} €</td>
+        <td style="padding: 1rem 0.5rem; text-align: right; color: var(--success); font-weight: 500;">${formatMoneda(c.fianzaAcumulada)} €</td>
+        <td style="padding: 1rem 0.5rem; text-align: right; font-weight: 600;" class="${diffColorClass}">${difTexto}</td>
+        <td style="padding: 1rem 0.5rem; color: var(--text-muted); font-size: 0.85rem;">${fechaFormateada}</td>
+        <td style="padding: 1rem 0.5rem;"><span class="badge-conciliacion ${badgeClass}">${badgeText}</span></td>
+        <td style="padding: 1rem 0.5rem; text-align: center;">
+          <button class="btn-danger-link delete-conciliacion-btn" title="Eliminar Liquidación" data-id="${c.id}" data-mes="${c.mesIndex}" data-anio="${c.anio}">
+            <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
+          </button>
+        </td>
+      `;
+
+      // Evento de eliminación
+      const btnDel = row.querySelector('.delete-conciliacion-btn');
+      btnDel.addEventListener('click', async () => {
+        if (!isPedroEditor) return;
+        if (confirm(`¿Estás seguro de que deseas eliminar el registro de liquidación de ${c.mesNombre} / ${c.anio}?`)) {
+          try {
+            await window.StorageModule.deleteConciliacion(c.id, c.mesIndex, c.anio);
+            conciliaciones = await window.StorageModule.getConciliaciones();
+            actualizarVistaConciliacion();
+            alert("Liquidación eliminada correctamente.");
+          } catch (e) {
+            alert("Error al eliminar la liquidación de la base de datos.");
+          }
+        }
+      });
+
+      tbody.appendChild(row);
+    });
+
+    // Controlar visibilidad del botón de eliminación en la tabla de conciliaciones
+    const deleteButtons = tbody.querySelectorAll('.delete-conciliacion-btn');
+    deleteButtons.forEach(btn => {
+      btn.disabled = !isPedroEditor;
+      if (!isPedroEditor) {
+        btn.style.display = 'none';
+      } else {
+        btn.style.display = 'inline-flex';
+      }
+    });
+
+    lucide.createIcons();
+  }
+
+  function calcularConciliacion() {
+    const inputSaldo = document.getElementById('con-saldo-real');
+    const saldoRealVal = parseFloat(inputSaldo.value);
+
+    if (isNaN(saldoRealVal) || saldoRealVal < 0) {
+      alert("Por favor, introduce un saldo real válido igual o superior a 0 €.");
+      return;
+    }
+
+    const fianzaEsp = obtenerFianzaAcumuladaParaMes(currentMonthIndex, currentAnio);
+    const fianzaEspCents = Math.round(fianzaEsp * 100);
+    const saldoRealCents = Math.round(saldoRealVal * 100);
+    const diferenciaCents = saldoRealCents - fianzaEspCents;
+    const diferencia = diferenciaCents / 100;
+
+    const panelResultado = document.getElementById('resultado-conciliacion');
+    panelResultado.style.display = 'block';
+
+    let cardClass = '';
+    let iconName = '';
+    let titulo = '';
+    let difSimbolo = '';
+    let instrucciones = '';
+    let tipo = '';
+
+    if (diferencia > 0) {
+      cardClass = 'sobrante';
+      iconName = 'check-circle';
+      titulo = 'Liquidación del día 15: Sobrante Detectado';
+      difSimbolo = '+';
+      tipo = 'sobrante_retirado';
+      instrucciones = `El saldo en el banco es superior a la fianza acumulada que debe protegerse. <br><br><strong>Pedro debe retirar ${formatMoneda(diferencia)} €</strong> de la cuenta común y transferirlos a su cuenta personal (recaudando a su favor la manutención de Olga y otros sobrantes). Tras este retiro, el saldo de la cuenta común quedará exactamente nivelado con el ahorro de la fianza (<strong>${formatMoneda(fianzaEsp)} €</strong>).`;
+    } else if (diferencia < 0) {
+      cardClass = 'deficit';
+      iconName = 'alert-triangle';
+      titulo = 'Liquidación del día 15: Déficit Detectado';
+      difSimbolo = '';
+      tipo = 'deficit_repuesto';
+      instrucciones = `El saldo en el banco está por debajo del ahorro de la fianza comprometido. <br><br><strong>Pedro debe aportar ${formatMoneda(Math.abs(diferencia))} €</strong> de su propio dinero particular a la cuenta común para reponer la fianza. Tras este ingreso, el saldo de la cuenta común volverá a garantizar el fondo de la fianza (<strong>${formatMoneda(fianzaEsp)} €</strong>).`;
+    } else {
+      cardClass = 'equilibrado';
+      iconName = 'scale';
+      titulo = 'Liquidación del día 15: Cuenta Equilibrada';
+      difSimbolo = '';
+      tipo = 'equilibrado';
+      instrucciones = `El saldo bancario actual coincide exactamente con el ahorro de la fianza acumulada de <strong>${formatMoneda(fianzaEsp)} €</strong>. No hay acciones de liquidación pendientes para Pedro.`;
+    }
+
+    panelResultado.className = `glass-card balance-card ${cardClass}`;
+    
+    // Crear el HTML interno
+    let registrarBtnHTML = '';
+    
+    // Comprobar si ya existe registro para este mes y año
+    const yaRegistrado = conciliaciones.some(
+      c => c.mesIndex === currentMonthIndex && c.anio === currentAnio
+    );
+
+    if (yaRegistrado) {
+      registrarBtnHTML = `
+        <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(0,0,0,0.05); border-radius: var(--radius-sm); font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+          <i data-lucide="check-check" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>
+          Liquidación de este mes ya registrada en el historial.
+        </div>
+      `;
+    } else if (isPedroEditor) {
+      registrarBtnHTML = `
+        <button class="btn btn-primary" id="btn-registrar-conciliacion" style="width: 100%; margin-top: 1rem; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
+          <i data-lucide="save"></i> Registrar Liquidación
+        </button>
+      `;
+    } else {
+      registrarBtnHTML = `
+        <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(0,0,0,0.05); border-radius: var(--radius-sm); font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+          <i data-lucide="lock" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;"></i>
+          Inicia sesión como Editor para registrar esta liquidación.
+        </div>
+      `;
+    }
+
+    panelResultado.innerHTML = `
+      <div class="balance-header">
+        <div class="balance-icon">
+          <i data-lucide="${iconName}"></i>
+        </div>
+        <h4 class="balance-title">${titulo}</h4>
+      </div>
+      <div class="balance-body">
+        <div class="balance-value-row">
+          <span class="balance-value-label">Diferencia Calculada:</span>
+          <span class="balance-value-amount">${difSimbolo}${formatMoneda(diferencia)} €</span>
+        </div>
+        <div class="balance-instruction-box">
+          ${instrucciones}
+        </div>
+        ${registrarBtnHTML}
+      </div>
+    `;
+
+    lucide.createIcons();
+
+    // Vincular evento al botón de registrar
+    const btnReg = document.getElementById('btn-registrar-conciliacion');
+    if (btnReg) {
+      btnReg.addEventListener('click', () => {
+        ejecutarRegistroConciliacion(saldoRealVal, fianzaEsp, diferencia, tipo);
+      });
+    }
+  }
+
+  async function ejecutarRegistroConciliacion(saldoReal, fianzaAcumulada, diferencia, tipo) {
+    if (!isPedroEditor) return;
+
+    const conciliacion = {
+      mesIndex: currentMonthIndex,
+      mesNombre: NOMBRES_MESES[currentMonthIndex],
+      anio: currentAnio,
+      saldoReal: saldoReal,
+      fianzaAcumulada: fianzaAcumulada,
+      diferencia: diferencia,
+      tipo: tipo,
+      fecha: new Date().toISOString()
+    };
+
+    try {
+      const exito = await window.StorageModule.addConciliacion(conciliacion);
+      if (exito) {
+        conciliaciones = await window.StorageModule.getConciliaciones();
+        actualizarVistaConciliacion();
+        alert(`Liquidación del mes de ${NOMBRES_MESES[currentMonthIndex]} registrada correctamente.`);
+      } else {
+        alert("Esta liquidación ya había sido registrada anteriormente.");
+      }
+    } catch (e) {
+      alert("Error al intentar guardar la liquidación en la base de datos.");
+    }
   }
 
   // --- FUNCIONES DE SOPORTE / UTILIDADES ---
