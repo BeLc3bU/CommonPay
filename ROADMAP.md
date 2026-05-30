@@ -1,6 +1,6 @@
 # 🗺️ Roadmap de Desarrollo - CommonPay
 
-Esta hoja de ruta detalla la estrategia de evolución técnica y de negocio de **CommonPay** a lo largo de las próximas sesiones de desarrollo como expareja copropietaria.
+Esta hoja de ruta detalla la estrategia de evolución técnica y de negocio de **CommonPay** a lo largo de las próximas sesiones de desarrollo.
 
 ---
 

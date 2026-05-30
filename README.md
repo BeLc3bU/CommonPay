@@ -1,6 +1,6 @@
 # 🪙 CommonPay - Gestión Financiera Inteligente
 
-CommonPay es una aplicación web responsiva e interactiva diseñada para la gestión financiera copropietaria de una expareja (Olga y Pedro). Permite calcular de forma completamente automática la transferencia mensual correspondiente a cada persona en base al mes seleccionado, gestionar un fondo de fianza común, almacenar el histórico de pagos, ver estadísticas anuales, emitir reportes y emitir alertas visuales de regularización contractual (hipoteca variable en septiembre, manutención por IPC en junio y alquiler por IRAV). Además, genera un calendario de pagos anual estructurado para Olga.
+CommonPay es una aplicación web responsiva e interactiva diseñada para la gestión financiera compartida entre Olga y Pedro. Permite calcular de forma completamente automática la transferencia mensual correspondiente a cada persona en base al mes seleccionado, gestionar un fondo de fianza común, almacenar el histórico de pagos, ver estadísticas anuales, emitir reportes y emitir alertas visuales de regularización contractual (hipoteca variable en septiembre, manutención por IPC en junio y alquiler por IRAV). Además, genera un calendario de pagos anual estructurado para Olga.
 
 ---
 
