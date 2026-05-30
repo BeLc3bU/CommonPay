@@ -24,7 +24,11 @@
   <div class="app-container">
     
     <!-- BARRA LATERAL DE NAVEGACIÓN -->
-    <aside class="sidebar">
+    <aside class="sidebar" id="sidebar">
+      <!-- BOTÓN CERRAR EN MÓVIL -->
+      <button class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Cerrar menú">
+        <i data-lucide="x"></i>
+      </button>
       <div>
         <div class="logo-container">
           <div class="logo-icon">C</div>
@@ -91,6 +95,53 @@
         </div>
       </div>
     </aside>
+
+    <!-- OVERLAY PARA CERRAR EL SIDEBAR EN MÓVIL -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- BARRA DE NAVEGACIÓN SUPERIOR MÓVIL -->
+    <div class="mobile-topbar" id="mobile-topbar">
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Abrir menú">
+        <i data-lucide="menu"></i>
+      </button>
+      <div class="mobile-logo">
+        <div class="logo-icon" style="width:32px; height:32px; font-size:1.1rem;">C</div>
+        <span class="logo-text" style="font-size:1.1rem;">CommonPay</span>
+      </div>
+      <!-- selector de mes compacto para móvil -->
+      <div class="selector-mes-wrapper mobile-month-sel" id="mobile-month-selector-container">
+        <select id="selector-mes-global-mobile" class="selector-mes" style="font-size:0.85rem;">
+          <option value="0">Ene</option>
+          <option value="1">Feb</option>
+          <option value="2">Mar</option>
+          <option value="3">Abr</option>
+          <option value="4">May</option>
+          <option value="5">Jun</option>
+          <option value="6">Jul</option>
+          <option value="7">Ago</option>
+          <option value="8">Sep</option>
+          <option value="9">Oct</option>
+          <option value="10">Nov</option>
+          <option value="11">Dic</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- BARRA DE NAVEGACIÓN INFERIOR TIPO APP (MÓVIL) -->
+    <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+      <a class="mobile-nav-item active" data-target="dashboard-view" id="mob-nav-dashboard">
+        <i data-lucide="layout-dashboard"></i><span>Inicio</span>
+      </a>
+      <a class="mobile-nav-item" data-target="fianza-view" id="mob-nav-fianza">
+        <i data-lucide="piggy-bank"></i><span>Fianza</span>
+      </a>
+      <a class="mobile-nav-item" data-target="stats-view" id="mob-nav-stats">
+        <i data-lucide="trending-up"></i><span>Stats</span>
+      </a>
+      <a class="mobile-nav-item" data-target="historial-view" id="mob-nav-historial">
+        <i data-lucide="history"></i><span>Historial</span>
+      </a>
+    </nav>
 
     <!-- CONTENIDO PRINCIPAL -->
     <main class="main-content">

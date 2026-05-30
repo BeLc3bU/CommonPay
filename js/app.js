@@ -20,8 +20,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const pageTitle = document.getElementById('page-title');
   const pageSubtitle = document.getElementById('page-subtitle');
   const selectorMesGlobal = document.getElementById('selector-mes-global');
+  const selectorMesGlobalMobile = document.getElementById('selector-mes-global-mobile');
   const monthSelectorContainer = document.getElementById('month-selector-container');
   const themeCheckbox = document.getElementById('theme-checkbox');
+
+  // Sidebar / Drawer móvil
+  const sidebar = document.getElementById('sidebar');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  const hamburgerBtn = document.getElementById('hamburger-btn');
+  const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
+  const mobileBottomNavItems = document.querySelectorAll('.mobile-nav-item');
 
   // Vista Dashboard
   const totalOlgaEl = document.getElementById('total-olga');
@@ -110,6 +118,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 4. Establecer mes por defecto
     selectorMesGlobal.value = currentMonthIndex;
+    if (selectorMesGlobalMobile) selectorMesGlobalMobile.value = currentMonthIndex;
 
     // 5. Inicializar tema visual
     const savedTheme = window.StorageModule.getTheme();
@@ -229,12 +238,20 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const targetView = link.getAttribute('data-target');
         cambiarVista(targetView, link);
+        // Cerrar drawer en móvil al navegar
+        if (sidebar && window.innerWidth <= 768) {
+          sidebar.classList.remove('open');
+          sidebarOverlay.classList.remove('active');
+          document.body.style.overflow = '';
+        }
       });
     });
 
     // Selector de mes
     selectorMesGlobal.addEventListener('change', (e) => {
       currentMonthIndex = parseInt(e.target.value);
+      // Sincronizar selector móvil
+      if (selectorMesGlobalMobile) selectorMesGlobalMobile.value = currentMonthIndex;
       actualizarDashboardMes();
       
       // Si la sección de conciliación está activa, actualizarla
@@ -243,6 +260,19 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarVistaConciliacion();
       }
     });
+
+    // Selector de mes MÓVIL — sincroniza con el principal
+    if (selectorMesGlobalMobile) {
+      selectorMesGlobalMobile.addEventListener('change', (e) => {
+        currentMonthIndex = parseInt(e.target.value);
+        selectorMesGlobal.value = currentMonthIndex;
+        actualizarDashboardMes();
+        const activeView = document.querySelector('.view-section.active');
+        if (activeView && activeView.id === 'conciliacion-view') {
+          actualizarVistaConciliacion();
+        }
+      });
+    }
 
     // Conmutador de tema
     themeCheckbox.addEventListener('change', (e) => {
@@ -310,7 +340,44 @@ document.addEventListener('DOMContentLoaded', () => {
         cerrarModalLogin();
       }
     });
-  }
+
+    // --- MÓVIL: HAMBURGER / DRAWER / BOTTOM NAV ---
+    function abrirSidebar() {
+      sidebar.classList.add('open');
+      sidebarOverlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function cerrarSidebar() {
+      sidebar.classList.remove('open');
+      sidebarOverlay.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    if (hamburgerBtn) {
+      hamburgerBtn.addEventListener('click', abrirSidebar);
+    }
+
+    if (sidebarCloseBtn) {
+      sidebarCloseBtn.addEventListener('click', cerrarSidebar);
+    }
+
+    if (sidebarOverlay) {
+      sidebarOverlay.addEventListener('click', cerrarSidebar);
+    }
+
+    // Barra de navegación inferior (móvil)
+    mobileBottomNavItems.forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetView = item.getAttribute('data-target');
+        cambiarVista(targetView, null);
+        // Sincronizar ítem activo en bottom nav
+        mobileBottomNavItems.forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      });
+    });
+  } // fin setupEventListeners
 
   // --- LÓGICA DE INICIO Y CIERRE DE SESIÓN ---
   async function manejarAccionAuth() {

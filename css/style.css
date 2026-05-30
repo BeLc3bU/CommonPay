@@ -912,6 +912,8 @@ tr:hover td {
 }
 
 /* --- RESPONSIVIDAD --- */
+
+/* Tablet */
 @media (max-width: 1024px) {
   .fianza-container {
     grid-template-columns: 1fr;
@@ -919,60 +921,428 @@ tr:hover td {
   .stats-grid {
     grid-template-columns: 1fr;
   }
+  .main-content {
+    padding: 2rem 2rem;
+  }
 }
 
+/* ====================================================
+   MOBILE — elementos ocultos en desktop
+   ==================================================== */
+
+/* Botón cerrar del drawer en móvil */
+.sidebar-close-btn {
+  display: none;
+}
+
+/* Topbar móvil — oculta en desktop */
+.mobile-topbar {
+  display: none;
+}
+
+/* Nav inferior móvil — oculta en desktop */
+.mobile-bottom-nav {
+  display: none;
+}
+
+/* Overlay del sidebar en móvil */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 199;
+  animation: fadeIn 0.2s ease;
+}
+
+.sidebar-overlay.active {
+  display: block;
+}
+
+/* Selector de mes compacto en topbar móvil */
+.mobile-month-sel {
+  padding: 0.35rem 0.75rem;
+}
+
+/* ====================================================
+   MOBILE ≤ 768px — Layout principal
+   ==================================================== */
 @media (max-width: 768px) {
-  body {
-    flex-direction: column;
+
+  /* Evitar scroll horizontal */
+  html, body {
+    overflow-x: hidden;
   }
 
+  body {
+    display: block;
+  }
+
+  /* ---- SIDEBAR COMO DRAWER DESLIZANTE ---- */
   .sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
-    padding: 1.5rem;
-    border-right: none;
-    border-bottom: 1px solid var(--border-color);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100%;
+    height: 100dvh;
+    z-index: 200;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 1.5rem 1.25rem;
+    border-right: 1px solid var(--border-color);
+    box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+    overflow-y: auto;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  /* Botón X para cerrar el drawer */
+  .sidebar-close-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background: var(--input-bg);
+    color: var(--text-muted);
+    cursor: pointer;
+    z-index: 201;
+  }
+
+  .sidebar-close-btn:hover {
+    background: var(--border-color);
+    color: var(--text-main);
   }
 
   .logo-container {
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
+    padding-right: 2.5rem; /* espacio para el botón X */
   }
 
   .nav-links {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-  }
-
-  .nav-link {
-    padding: 0.6rem 0.85rem;
-    font-size: 0.85rem;
-    gap: 0.5rem;
+    flex-direction: column;
+    gap: 0.4rem;
   }
 
   .sidebar-footer {
-    margin-top: 1.5rem;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
+    margin-top: 2rem;
   }
 
+  /* ---- TOPBAR FIJA SUPERIOR ---- */
+  .mobile-topbar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 1rem;
+    z-index: 150;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+
+  .hamburger-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: transparent;
+    color: var(--text-main);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .hamburger-btn:hover {
+    background: var(--input-bg);
+  }
+
+  .mobile-logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-grow: 1;
+  }
+
+  /* ---- CONTENIDO PRINCIPAL ---- */
   .main-content {
     margin-left: 0;
-    padding: 1.5rem;
+    padding: 1.25rem 1rem 5.5rem 1rem; /* padding-bottom para la nav inferior */
+    padding-top: calc(56px + 1.25rem); /* espacio para la topbar */
+    min-height: 100dvh;
   }
 
+  /* ---- BANNER CABECERA ---- */
+  .header-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Selector de mes desktop en header — oculto en móvil */
+  #month-selector-container {
+    display: none;
+  }
+
+  .welcome-title {
+    font-size: 1.6rem;
+    letter-spacing: -0.3px;
+  }
+
+  .welcome-subtitle {
+    font-size: 0.875rem;
+  }
+
+  /* ---- GRIDS PRINCIPALES ---- */
   .dashboard-grid {
     grid-template-columns: 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .fianza-container {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
   }
 
   .config-grid {
     grid-template-columns: 1fr;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
   }
 
+  /* ---- TARJETAS Y MONTOS ---- */
+  .glass-card {
+    padding: 1.25rem;
+    border-radius: var(--radius-md);
+  }
+
+  .monto-transferencia {
+    font-size: 2.1rem;
+  }
+
+  .person-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 1rem;
+  }
+
+  .person-name {
+    font-size: 1.15rem;
+  }
+
+  /* ---- MÉTRICAS DE FIANZA ---- */
+  .fianza-metrics {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.65rem;
+  }
+
+  .metric-box {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .metric-value {
+    font-size: 1rem;
+  }
+
+  /* ---- TABLA HISTORIAL ---- */
+  .table-header-container {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-sm);
+  }
+
+  table {
+    min-width: 560px;
+  }
+
+  th, td {
+    padding: 0.85rem 1rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+
+  /* ---- FORMULARIO AJUSTES ---- */
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
+  }
+
+  .form-label {
+    font-size: 0.85rem;
+  }
+
+  .config-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .config-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ---- GCAL BUTTONS ---- */
+  .gcal-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-gcal {
+    justify-content: center;
+    padding: 0.75rem 1rem;
+  }
+
+  /* ---- BARRA DE NAVEGACIÓN INFERIOR ---- */
+  .mobile-bottom-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 58px;
+    background: var(--bg-sidebar);
+    border-top: 1px solid var(--border-color);
+    z-index: 150;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
+    /* safe-area iOS */
+    padding-bottom: env(safe-area-inset-bottom);
+    height: calc(58px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    flex: 1;
+    height: 100%;
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.65rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    padding-bottom: 4px;
+  }
+
+  .mobile-nav-item i {
+    width: 22px;
+    height: 22px;
+  }
+
+  .mobile-nav-item.active {
+    color: var(--primary);
+  }
+
+  .mobile-nav-item.active i {
+    filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.4));
+  }
+
+  /* ---- BOTONES GENERALES ---- */
+  .btn {
+    font-size: 0.9rem;
+    padding: 0.8rem 1.25rem;
+  }
+
+  /* ---- CONCILIACIÓN (LIQUIDACIÓN DÍA 15) ---- */
+  [style*="grid-template-columns: 1fr 1fr"] {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ---- ALERTAS Y BANNERS ---- */
+  .alert-banner {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.6rem;
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  /* ---- CHART ---- */
+  .chart-container {
+    height: 260px;
+  }
+
+  /* ---- MODAL ---- */
+  .modal-content {
+    margin: 1rem;
+    width: calc(100% - 2rem);
+    max-width: unset;
+    padding: 1.5rem;
+  }
+}
+
+/* ====================================================
+   MOBILE muy pequeño ≤ 375px — Ajustes finos
+   ==================================================== */
+@media (max-width: 375px) {
   .welcome-title {
+    font-size: 1.35rem;
+  }
+
+  .monto-transferencia {
     font-size: 1.8rem;
+  }
+
+  .fianza-metrics {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+  }
+
+  .metric-title {
+    font-size: 0.7rem;
+  }
+
+  .metric-value {
+    font-size: 0.9rem;
+  }
+
+  .mobile-bottom-nav {
+    height: 52px;
+    height: calc(52px + env(safe-area-inset-bottom));
+  }
+
+  .mobile-nav-item {
+    font-size: 0.6rem;
+  }
+
+  .mobile-nav-item i {
+    width: 20px;
+    height: 20px;
   }
 }
 
