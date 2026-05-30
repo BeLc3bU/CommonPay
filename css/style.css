@@ -1339,4 +1339,55 @@ tr:hover td {
   background: none;
 }
 
+/* --- GOOGLE CALENDAR / iCAL (FASE 4) --- */
+.gcal-card {
+  border-left: 4px solid #4285f4;
+}
+
+.gcal-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.btn-gcal {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 1.1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid #4285f4;
+  background: rgba(66, 133, 244, 0.08);
+  color: #4285f4;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.btn-gcal:hover {
+  background: #4285f4;
+  color: white;
+  box-shadow: 0 4px 14px rgba(66, 133, 244, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-gcal:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .btn-gcal {
+  border-color: #7aaef8;
+  background: rgba(66, 133, 244, 0.12);
+  color: #7aaef8;
+}
+
+[data-theme="dark"] .btn-gcal:hover {
+  background: #4285f4;
+  color: white;
+}
+
 

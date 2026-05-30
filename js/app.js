@@ -279,6 +279,19 @@ document.addEventListener('DOMContentLoaded', () => {
       btnCalcularBalance.addEventListener('click', calcularConciliacion);
     }
 
+    // Google Calendar / iCal
+    const btnExportarIcal = document.getElementById('btn-exportar-ical');
+    if (btnExportarIcal) btnExportarIcal.addEventListener('click', exportarCalendarioIcs);
+
+    const btnGcalOlga = document.getElementById('btn-gcal-olga');
+    if (btnGcalOlga) btnGcalOlga.addEventListener('click', () => abrirGoogleCalendar('olga'));
+
+    const btnGcalHipoteca = document.getElementById('btn-gcal-hipoteca');
+    if (btnGcalHipoteca) btnGcalHipoteca.addEventListener('click', () => abrirGoogleCalendar('hipoteca'));
+
+    const btnGcalAlquiler = document.getElementById('btn-gcal-alquiler');
+    if (btnGcalAlquiler) btnGcalAlquiler.addEventListener('click', () => abrirGoogleCalendar('alquiler'));
+
     // Guardar ajustes
     btnConfigGuardar.addEventListener('click', guardarAjustes);
 
@@ -1464,6 +1477,176 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function agregarCero(num) {
     return num < 10 ? '0' + num : num;
+  }
+
+  // --- GOOGLE CALENDAR / iCAL (FASE 4) ---
+
+  /**
+   * Formatea una fecha como YYYYMMDD para iCal
+   */
+  function icsDate(anio, mes, dia) {
+    return `${anio}${agregarCero(mes + 1)}${agregarCero(dia)}`;
+  }
+
+  /**
+   * Formatea una fecha como YYYYMMDD para URL de Google Calendar
+   */
+  function gcalDate(anio, mes, dia) {
+    return `${anio}${agregarCero(mes + 1)}${agregarCero(dia)}`;
+  }
+
+  /**
+   * Genera y descarga un archivo .ics con todos los eventos del año configurados.
+   * Incluye eventos recurrentes mensuales (días 5, 10, 15) y alertas de revisión contractual.
+   */
+  function exportarCalendarioIcs() {
+    const alertas = appConfig.alertas || {
+      mesHipoteca: 8,
+      mesManutencion: 5,
+      mesAlquiler: 10
+    };
+
+    const anio = currentAnio;
+    const uid = () => Math.random().toString(36).substring(2, 11).toUpperCase();
+    const ahora = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+
+    let eventos = [];
+
+    // Función interna para crear un bloque VEVENT
+    const vevent = ({ uid: u, dtstart, dtend, summary, description, rrule }) => {
+      let bloque = `BEGIN:VEVENT\r\nUID:${u}@commonpay\r\nDTSTAMP:${ahora}\r\nDTSTART;VALUE=DATE:${dtstart}\r\nDTEND;VALUE=DATE:${dtend}\r\nSUMMARY:${summary}\r\nDESCRIPTION:${description}`;
+      if (rrule) bloque += `\r\nRRULE:${rrule}`;
+      bloque += `\r\nBEGIN:VALARM\r\nTRIGGER:-PT0M\r\nACTION:DISPLAY\r\nDESCRIPTION:Recordatorio CommonPay\r\nEND:VALARM\r\nEND:VEVENT`;
+      return bloque;
+    };
+
+    // 1. Ingreso de Olga — recurrente cada día 5
+    eventos.push(vevent({
+      uid: uid(),
+      dtstart: icsDate(anio, 0, 5),
+      dtend: icsDate(anio, 0, 6),
+      summary: '💸 Ingreso Olga — Cuenta Común',
+      description: 'Olga transfiere su aportación mensual a la cuenta común (gastos de hogar + manutención + coche). Verificar que el ingreso ha llegado.',
+      rrule: `FREQ=MONTHLY;BYMONTHDAY=5;UNTIL=${anio}1231`
+    }));
+
+    // 2. Cobro Hipoteca — recurrente cada día 10
+    eventos.push(vevent({
+      uid: uid(),
+      dtstart: icsDate(anio, 0, 10),
+      dtend: icsDate(anio, 0, 11),
+      summary: '🏠 Cobro Hipoteca — Cuenta Común',
+      description: `El banco cargará la cuota hipotecaria en torno al día 10. Cuota base: ${formatMoneda(appConfig.gastosFijos?.cuotaHipoteca || 0)} €. Revisar el saldo de la cuenta.`,
+      rrule: `FREQ=MONTHLY;BYMONTHDAY=10;UNTIL=${anio}1231`
+    }));
+
+    // 3. Ingreso Alquiler Casa — recurrente cada día 15
+    eventos.push(vevent({
+      uid: uid(),
+      dtstart: icsDate(anio, 0, 15),
+      dtend: icsDate(anio, 0, 16),
+      summary: '🏡 Ingreso Alquiler Casa — Cuenta Común',
+      description: `El inquilino transfiere el alquiler de la casa. Importe mensual: ${formatMoneda(appConfig.gastosFijos?.ingresoAlquiler || 0)} €. Comprobar el ingreso en cuenta y liquidar diferencias del día 15.`,
+      rrule: `FREQ=MONTHLY;BYMONTHDAY=15;UNTIL=${anio}1231`
+    }));
+
+    // 4. Revisión Hipoteca Variable (evento puntual el día 1 del mes configurado)
+    const mesHip = parseInt(alertas.mesHipoteca ?? 8);
+    eventos.push(vevent({
+      uid: uid(),
+      dtstart: icsDate(anio, mesHip, 1),
+      dtend: icsDate(anio, mesHip, 2),
+      summary: `⚠️ Revisión Hipoteca Variable — ${NOMBRES_MESES[mesHip]} ${anio}`,
+      description: `Este mes se revisa la cuota de la hipoteca variable. Nueva cuota estimada: ${formatMoneda(alertas.cuotaHipotecaNueva || appConfig.gastosFijos?.cuotaHipoteca || 0)} €. Actualizar el importe en CommonPay > Ajustes.`,
+      rrule: null
+    }));
+
+    // 5. Actualización Manutención IPC (evento puntual el día 1 del mes configurado)
+    const mesMant = parseInt(alertas.mesManutencion ?? 5);
+    const manutencionNueva = (appConfig.gastosPersonales?.olga?.manutencion || 0) * (1 + (alertas.tasaManutencion || 2) / 100);
+    eventos.push(vevent({
+      uid: uid(),
+      dtstart: icsDate(anio, mesMant, 1),
+      dtend: icsDate(anio, mesMant, 2),
+      summary: `📈 Actualización Manutención IPC — ${NOMBRES_MESES[mesMant]} ${anio}`,
+      description: `Este mes se actualiza la cuota de manutención conforme al IPC (${alertas.tasaManutencion || 2}%). Nuevo importe estimado: ${formatMoneda(manutencionNueva)} €/mes. Actualizar en CommonPay > Ajustes.`,
+      rrule: null
+    }));
+
+    // 6. Actualización Alquiler IRAV (evento puntual el día 1 del mes configurado)
+    const mesAlq = parseInt(alertas.mesAlquiler ?? 10);
+    const alquilerNuevo = (appConfig.gastosFijos?.ingresoAlquiler || 0) * (1 + (alertas.tasaAlquiler || 2) / 100);
+    eventos.push(vevent({
+      uid: uid(),
+      dtstart: icsDate(anio, mesAlq, 1),
+      dtend: icsDate(anio, mesAlq, 2),
+      summary: `📋 Actualización Alquiler IRAV — ${NOMBRES_MESES[mesAlq]} ${anio}`,
+      description: `Este mes se actualiza el alquiler de la casa conforme al IRAV (${alertas.tasaAlquiler || 2}%). Nuevo importe estimado: ${formatMoneda(alquilerNuevo)} €/mes. Actualizar en CommonPay > Ajustes.`,
+      rrule: null
+    }));
+
+    // Construir el archivo iCal
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//CommonPay//ES',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      `X-WR-CALNAME:CommonPay ${anio}`,
+      'X-WR-TIMEZONE:Europe/Madrid',
+      ...eventos,
+      'END:VCALENDAR'
+    ].join('\r\n');
+
+    // Descargar el archivo
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `CommonPay_Calendario_${anio}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  /**
+   * Abre Google Calendar en una nueva pestaña con un evento recurrente mensual pre-rellenado.
+   * @param {'olga'|'hipoteca'|'alquiler'} tipo - Tipo de evento a generar
+   */
+  function abrirGoogleCalendar(tipo) {
+    const anio = currentAnio;
+    let texto = '';
+    let descripcion = '';
+    let dia = '';
+
+    if (tipo === 'olga') {
+      texto = `Ingreso Olga - Cuenta Común`;
+      descripcion = `Olga transfiere su aportación mensual (hogar + manutención + coche) a la cuenta común. Verificar que el ingreso ha llegado.`;
+      dia = '05';
+    } else if (tipo === 'hipoteca') {
+      texto = `Cobro Hipoteca - Cuenta Común`;
+      descripcion = `El banco carga la cuota hipotecaria. Cuota base: ${formatMoneda(appConfig.gastosFijos?.cuotaHipoteca || 0)} €. Revisar saldo disponible.`;
+      dia = '10';
+    } else if (tipo === 'alquiler') {
+      texto = `Ingreso Alquiler Casa - Cuenta Común`;
+      descripcion = `El inquilino transfiere el alquiler mensual: ${formatMoneda(appConfig.gastosFijos?.ingresoAlquiler || 0)} €. Día de liquidación del balance.`;
+      dia = '15';
+    }
+
+    // Fecha de inicio: primer mes del año en el día indicado
+    const fechaInicio = `${anio}01${dia}`;
+    const fechaFin = `${anio}01${parseInt(dia) + 1 < 10 ? '0' + (parseInt(dia) + 1) : (parseInt(dia) + 1)}`;
+
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: texto,
+      dates: `${fechaInicio}/${fechaFin}`,
+      details: descripcion,
+      recur: `RRULE:FREQ=MONTHLY;BYMONTHDAY=${parseInt(dia)};UNTIL=${anio}1231`
+    });
+
+    window.open(`https://calendar.google.com/calendar/render?${params.toString()}`, '_blank');
   }
 
   // --- ARRANQUE DE LA APLICACIÓN ---

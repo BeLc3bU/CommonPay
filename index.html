@@ -450,6 +450,26 @@
               </div>
             </div>
 
+            <div class="form-row">
+              <label class="form-label" for="cfg-alerta-alquiler">Actualización Alquiler IRAV</label>
+              <div class="input-wrapper">
+                <select id="cfg-alerta-alquiler" class="input-control" style="text-align: left; padding-right: 0.5rem; text-align-last: right;">
+                  <option value="0">Enero</option>
+                  <option value="1">Febrero</option>
+                  <option value="2">Marzo</option>
+                  <option value="3">Abril</option>
+                  <option value="4">Mayo</option>
+                  <option value="5">Junio</option>
+                  <option value="6">Julio</option>
+                  <option value="7">Agosto</option>
+                  <option value="8">Septiembre</option>
+                  <option value="9">Octubre</option>
+                  <option value="10">Noviembre</option>
+                  <option value="11">Diciembre</option>
+                </select>
+              </div>
+            </div>
+
             <div class="form-row" style="margin-top: 1rem; border-top: 1px dashed var(--border-color); padding-top: 1rem;">
               <label class="form-label" for="cfg-hipoteca-nueva">Cuota Hipoteca Variable Nueva</label>
               <div class="input-wrapper">
@@ -520,6 +540,28 @@
             </div>
           </div>
 
+        </div>
+
+        <!-- TARJETA GOOGLE CALENDAR / iCAL -->
+        <div class="glass-card gcal-card" style="margin-top: 0;">
+          <h3 class="form-group-title"><i data-lucide="calendar-range"></i> Sincronización Google Calendar / iCal</h3>
+          <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6;">
+            Exporta los días señalados del año a tu calendario. Incluye el ingreso de Olga (día 5), el cobro de hipoteca (día 10), el ingreso de alquiler (día 15) y los meses de revisión de cuotas configurados.
+          </p>
+          <div class="gcal-buttons">
+            <button class="btn btn-primary" id="btn-exportar-ical">
+              <i data-lucide="download"></i> Descargar Calendario (.ics)
+            </button>
+            <button class="btn btn-gcal" id="btn-gcal-olga">
+              <i data-lucide="calendar-plus"></i> Ingreso Olga (día 5)
+            </button>
+            <button class="btn btn-gcal" id="btn-gcal-hipoteca">
+              <i data-lucide="calendar-plus"></i> Hipoteca (día 10)
+            </button>
+            <button class="btn btn-gcal" id="btn-gcal-alquiler">
+              <i data-lucide="calendar-plus"></i> Alquiler (día 15)
+            </button>
+          </div>
         </div>
 
         <!-- ACCIONES DE CONFIGURACIÓN -->

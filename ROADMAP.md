@@ -47,7 +47,28 @@ Esta hoja de ruta detalla la estrategia de evolución técnica y de negocio de *
 
 ---
 
-## 📊 Fase 4: Parser de Extractos Bancarios y Conciliación Inteligente (Mediano Plazo)
+## 📅 Fase 4: Sincronización con Google Calendar / iCal (Completada)
+*Objetivo: Exportar los días señalados del calendario doméstico a Google Calendar u otros clientes de calendario.*
+
+* [x] **Corrección del selector de mes IRAV del Alquiler**:
+  * Añadido el campo desplegable "Actualización Alquiler IRAV" en la sección de Regularizaciones y Alertas de Ajustes.
+  * El mes seleccionado se guarda en la configuración y se utiliza tanto para el recálculo automático como para la generación de eventos de calendario.
+* [x] **Exportación a iCalendar (.ics)**:
+  * Botón "Descargar Calendario (.ics)" que genera y descarga un archivo `CommonPay_Calendario_2026.ics`.
+  * El archivo contiene 6 eventos:
+    * **Recurrente cada día 5**: Recordatorio de ingreso de Olga.
+    * **Recurrente cada día 10**: Recordatorio del cobro de la Hipoteca.
+    * **Recurrente cada día 15**: Recordatorio del ingreso de Alquiler y liquidación del balance.
+    * **Puntual mes configurado (Hipoteca)**: Alerta de revisión de cuota variable.
+    * **Puntual mes configurado (Manutención)**: Alerta de actualización por IPC.
+    * **Puntual mes configurado (Alquiler)**: Alerta de actualización por IRAV.
+  * Compatible con Google Calendar, Apple Calendar, Outlook y cualquier cliente iCal.
+* [x] **Botones de enlace directo a Google Calendar**:
+  * Tres botones que abren Google Calendar en nueva pestaña con el evento pre-rellenado (título, descripción, fecha y recurrencia mensual).
+
+---
+
+## 📊 Fase 5: Parser de Extractos Bancarios y Conciliación Inteligente (Mediano Plazo)
 *Objetivo: Reducir la introducción manual de datos y digitalizar los desgloses mediante ficheros bancarios.*
 
 * [ ] **Parser de Extractos**:
