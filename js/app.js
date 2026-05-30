@@ -971,7 +971,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Configuración estética del PDF
     const opt = {
       margin:       10,
-      filename:     `Desglose_${mesNombre}_2026.pdf`,
+      filename:     `CommonPay_Desglose_${mesNombre}_2026.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { 
         scale: 2, 
@@ -1044,8 +1044,8 @@ document.addEventListener('DOMContentLoaded', () => {
     printContainer.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4f46e5; padding-bottom: 15px; margin-bottom: 20px;">
         <div>
-          <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.8rem; margin: 0; color: #4f46e5;">Planificación Anual 2026</h1>
-          <p style="font-size: 0.85rem; color: #64748b; margin: 2px 0 0 0;">Calendario de Pagos Mensuales</p>
+          <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.8rem; margin: 0; color: #4f46e5;">CommonPay</h1>
+          <p style="font-size: 0.85rem; color: #64748b; margin: 2px 0 0 0;">Planificación Anual de Pagos 2026</p>
         </div>
         <div style="text-align: right; padding-top: 5px;">
           <span style="font-weight: 700; color: #1e293b; font-size: 1.05rem;">Destinatario: Olga</span>
@@ -1090,15 +1090,16 @@ document.addEventListener('DOMContentLoaded', () => {
         </tbody>
       </table>
 
-      <div style="font-size: 0.75rem; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 15px; text-align: center; margin-top: 30px;">
-        Fecha de Emisión: ${new Date().toLocaleDateString('es-ES')}
+      <div style="font-size: 0.75rem; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 15px; display: flex; justify-content: space-between; align-items: center; margin-top: 30px;">
+        <span>Generado automáticamente por CommonPay</span>
+        <span>Fecha de Emisión: ${new Date().toLocaleDateString('es-ES')}</span>
       </div>
     `;
 
     // Configuración de descarga PDF
     const opt = {
       margin:       15,
-      filename:     `Prevision_Anual_Olga_2026.pdf`,
+      filename:     `CommonPay_Prevision_Anual_Olga_2026.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
       html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
@@ -1140,7 +1141,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     worksheet['!cols'] = wscols;
 
-    XLSX.writeFile(workbook, `Historial_Gastos_2026.xlsx`);
+    XLSX.writeFile(workbook, `CommonPay_Historial_Gastos_2026.xlsx`);
   }
 
   // --- FUNCIONES DE SOPORTE / UTILIDADES ---
