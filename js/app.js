@@ -1132,10 +1132,12 @@ document.addEventListener('DOMContentLoaded', () => {
   function generarReporteAnualOlga() {
     const alertas = appConfig.alertas || { mesHipoteca: 8, mesManutencion: 5, mesAlquiler: 10 };
     
-    const printContainer = document.getElementById('reporte-anual-olga-container');
-    if (!printContainer) return;
-    
-    printContainer.style.display = 'block';
+    // Contenedor temporal para renderizar el PDF
+    const printContainer = document.createElement('div');
+    printContainer.style.padding = '25px';
+    printContainer.style.fontFamily = "'Inter', sans-serif";
+    printContainer.style.color = '#1e293b';
+    printContainer.style.backgroundColor = '#ffffff';
 
     // Generamos las filas de la tabla
     let tablaHTML = '';
@@ -1240,32 +1242,35 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
 
     // Configuración de descarga PDF
-    const isMobile = window.innerWidth <= 768;
     const opt = {
       margin:       15,
       filename:     `CommonPay_Prevision_Anual_Olga_2026.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { 
-        scale: isMobile ? 1.2 : 2, // Escala menor en móviles para evitar el límite de memoria del canvas en iOS
-        useCORS: true, 
-        backgroundColor: '#ffffff' 
-      },
+      html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
 
+    // html2canvas NECESITA que el elemento esté en el DOM para renderizar
+    printContainer.style.position = 'fixed';
+    printContainer.style.top = '-9999px';
+    printContainer.style.left = '0';
+    printContainer.style.width = '1122px'; // Ancho A4 landscape a 96dpi
+    printContainer.style.zIndex = '-1';
+    document.body.appendChild(printContainer);
+
     html2pdf().set(opt).from(printContainer).save().then(() => {
-      // Ocultar y vaciar el contenedor estático
-      printContainer.style.display = 'none';
-      printContainer.innerHTML = '';
+      document.body.removeChild(printContainer);
     }).catch(err => {
-      console.error("Error al exportar PDF de Olga:", err);
-      printContainer.style.display = 'none';
-      printContainer.innerHTML = '';
+      console.error('Error al generar PDF de Olga:', err);
+      if (document.body.contains(printContainer)) {
+        document.body.removeChild(printContainer);
+      }
     });
   }
 
   // EXPORTAR HISTORIAL A EXCEL (XLSX)
   function exportarExcelHistorial() {
+
     if (historialTransferencias.length === 0) {
       alert("No hay datos en el historial para exportar.");
       return;
