@@ -251,6 +251,7 @@ input:checked + .slider:before {
   padding: 2.5rem 3rem;
   min-height: 100vh;
   position: relative;
+  min-width: 0;
 }
 
 /* --- PÁGINAS / VISTAS --- */
@@ -498,6 +499,13 @@ input:checked + .slider:before {
   margin-bottom: 2.5rem;
 }
 
+.conciliacion-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
 .progress-header {
   display: flex;
   justify-content: space-between;
@@ -728,16 +736,21 @@ input:checked + .slider:before {
 }
 
 .table-wrapper {
+  width: 100%;
+  max-width: 100%;
+  display: block;
   overflow-x: auto;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-color);
   background-color: var(--input-bg);
+  -webkit-overflow-scrolling: touch;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  min-width: 780px;
 }
 
 th {
@@ -1278,9 +1291,15 @@ tr:hover td {
   }
 
   /* ---- CONCILIACIÓN (LIQUIDACIÓN DÍA 15) ---- */
-  [style*="grid-template-columns: 1fr 1fr"] {
-    display: grid !important;
+  .conciliacion-grid {
     grid-template-columns: 1fr !important;
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* ---- TABLA HISTORIAL Y CONCILIACIONES ---- */
+  table {
+    min-width: 800px;
   }
 
   /* ---- ALERTAS Y BANNERS ---- */

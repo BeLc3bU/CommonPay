@@ -6,6 +6,12 @@
   <title>CommonPay - Gestión Financiera Inteligente</title>
   <meta name="description" content="Aplicación de control financiero doméstico. Calcula aportaciones, gastos comunes y fianza de forma automática.">
   <link rel="stylesheet" href="css/style.css">
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('commonpay_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    })();
+  </script>
   
   <!-- CDNs de librerías esenciales -->
   <!-- Chart.js para visualización de gráficas -->
@@ -629,7 +635,7 @@
 
       <!-- SECCIÓN 6: LIQUIDACIÓN / CONCILIACIÓN DEL DÍA 15 -->
       <section id="conciliacion-view" class="view-section">
-        <div class="fianza-container" style="grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+        <div class="fianza-container conciliacion-grid">
           
           <!-- TARJETA FIANZA TEÓRICA -->
           <div class="glass-card">
@@ -683,7 +689,7 @@
         <div class="glass-card">
           <h3 class="form-group-title" style="margin-bottom: 1.25rem;"><i data-lucide="history" style="color: var(--text-muted);"></i> Historial de Liquidaciones (Día 15)</h3>
           
-          <div class="table-responsive" style="overflow-x: auto;">
+          <div class="table-wrapper">
             <table class="table" id="tabla-conciliaciones" style="width: 100%; border-collapse: collapse;">
               <thead>
                 <tr style="border-bottom: 2px solid var(--border-color); text-align: left; font-size: 0.9rem;">

@@ -464,12 +464,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Desactivar todos los enlaces y secciones
     navLinks.forEach(link => link.classList.remove('active'));
+    mobileBottomNavItems.forEach(item => item.classList.remove('active'));
     viewSections.forEach(sec => sec.classList.remove('active'));
 
-    // Activar sección y enlace actual
-    activeLink.classList.add('active');
+    // Activar sección actual
     const targetSection = document.getElementById(viewId);
-    targetSection.classList.add('active');
+    if (targetSection) {
+      targetSection.classList.add('active');
+    }
+
+    // Activar enlace correspondiente en el sidebar
+    navLinks.forEach(link => {
+      if (link.getAttribute('data-target') === viewId) {
+        link.classList.add('active');
+      }
+    });
+
+    // Activar enlace correspondiente en la barra inferior móvil
+    mobileBottomNavItems.forEach(item => {
+      if (item.getAttribute('data-target') === viewId) {
+        item.classList.add('active');
+      }
+    });
 
     // Adaptar cabecera y selector de mes según la sección
     if (viewId === 'dashboard-view') {
@@ -1118,10 +1134,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Contenedor temporal para renderizar el PDF
     const printContainer = document.createElement('div');
+    printContainer.style.width = '1120px'; // Ancho de A4 horizontal fijo para evitar rotura en móviles
+    printContainer.style.position = 'absolute';
+    printContainer.style.left = '-9999px';
+    printContainer.style.top = '0';
     printContainer.style.padding = '25px';
     printContainer.style.fontFamily = "'Inter', sans-serif";
     printContainer.style.color = '#1e293b';
     printContainer.style.backgroundColor = '#ffffff';
+    document.body.appendChild(printContainer);
 
     // Generamos las filas de la tabla
     let tablaHTML = '';
@@ -1234,7 +1255,9 @@ document.addEventListener('DOMContentLoaded', () => {
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
 
-    html2pdf().set(opt).from(printContainer).save();
+    html2pdf().set(opt).from(printContainer).save().then(() => {
+      printContainer.remove();
+    });
   }
 
   // EXPORTAR HISTORIAL A EXCEL (XLSX)
