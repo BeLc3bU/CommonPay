@@ -1135,9 +1135,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Contenedor temporal para renderizar el PDF
     const printContainer = document.createElement('div');
     printContainer.style.width = '1120px'; // Ancho de A4 horizontal fijo para evitar rotura en móviles
-    printContainer.style.position = 'fixed';
-    printContainer.style.left = '0';
-    printContainer.style.top = '100vh';
+    printContainer.style.position = 'absolute';
+    printContainer.style.left = '-9999px';
+    printContainer.style.top = '0';
     printContainer.style.padding = '25px';
     printContainer.style.fontFamily = "'Inter', sans-serif";
     printContainer.style.color = '#1e293b';
