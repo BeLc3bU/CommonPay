@@ -1132,17 +1132,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function generarReporteAnualOlga() {
     const alertas = appConfig.alertas || { mesHipoteca: 8, mesManutencion: 5, mesAlquiler: 10 };
     
-    // Contenedor temporal para renderizar el PDF
-    const printContainer = document.createElement('div');
-    printContainer.style.width = '1120px'; // Ancho de A4 horizontal fijo para evitar rotura en móviles
-    printContainer.style.position = 'absolute';
-    printContainer.style.left = '-9999px';
-    printContainer.style.top = '0';
-    printContainer.style.padding = '25px';
-    printContainer.style.fontFamily = "'Inter', sans-serif";
-    printContainer.style.color = '#1e293b';
-    printContainer.style.backgroundColor = '#ffffff';
-    document.body.appendChild(printContainer);
+    const printContainer = document.getElementById('reporte-anual-olga-container');
+    if (!printContainer) return;
+    
+    printContainer.style.display = 'block';
 
     // Generamos las filas de la tabla
     let tablaHTML = '';
@@ -1247,20 +1240,28 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
 
     // Configuración de descarga PDF
+    const isMobile = window.innerWidth <= 768;
     const opt = {
       margin:       15,
       filename:     `CommonPay_Prevision_Anual_Olga_2026.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      html2canvas:  { 
+        scale: isMobile ? 1.2 : 2, // Escala menor en móviles para evitar el límite de memoria del canvas en iOS
+        useCORS: true, 
+        backgroundColor: '#ffffff' 
+      },
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
 
-    // Dar tiempo al navegador para procesar la maquetación y renderizado en el DOM antes de la captura
-    setTimeout(() => {
-      html2pdf().set(opt).from(printContainer).save().then(() => {
-        printContainer.remove();
-      });
-    }, 300);
+    html2pdf().set(opt).from(printContainer).save().then(() => {
+      // Ocultar y vaciar el contenedor estático
+      printContainer.style.display = 'none';
+      printContainer.innerHTML = '';
+    }).catch(err => {
+      console.error("Error al exportar PDF de Olga:", err);
+      printContainer.style.display = 'none';
+      printContainer.innerHTML = '';
+    });
   }
 
   // EXPORTAR HISTORIAL A EXCEL (XLSX)
