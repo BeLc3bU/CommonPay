@@ -1255,9 +1255,12 @@ document.addEventListener('DOMContentLoaded', () => {
       jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
 
-    html2pdf().set(opt).from(printContainer).save().then(() => {
-      printContainer.remove();
-    });
+    // Dar tiempo al navegador para procesar la maquetación y renderizado en el DOM antes de la captura
+    setTimeout(() => {
+      html2pdf().set(opt).from(printContainer).save().then(() => {
+        printContainer.remove();
+      });
+    }, 300);
   }
 
   // EXPORTAR HISTORIAL A EXCEL (XLSX)
