@@ -68,6 +68,30 @@ Esta hoja de ruta detalla la estrategia de evolución técnica y de negocio de *
 
 ---
 
+## 📈 Fase 4.1: Previsión Anual Interactiva (Completada)
+*Objetivo: Reemplazar el antiguo botón de PDF de calendario anual de Olga por una página interactiva en la navegación principal, con soporte para consultar la previsión de cualquiera de las dos personas.*
+
+* [x] **Nueva vista "Previsión Anual" en el menú lateral**:
+  * Entrada de navegación dedicada con icono `calendar-range` en el sidebar, visible para todos los roles.
+  * Eliminado el botón "Calendario Anual Olga" del dashboard (funcionalidad superada).
+* [x] **Selector de persona (Olga / Pedro)**:
+  * Desplegable estético integrado en la barra de controles superior de la vista.
+  * La tabla y las tarjetas de resumen se recalculan instantáneamente al cambiar de persona.
+  * Las columnas de "Coche" y "Manutención" se ocultan dinámicamente al seleccionar a Pedro.
+* [x] **Tabla mensual interactiva de 12 meses**:
+  * Columnas: Hipoteca (50%), Comunidad (50%), Fianza, Coche, Manutención, Extraordinarios, Total.
+  * Fila del mes actual resaltada con borde lateral y color de acento de la persona seleccionada.
+  * Badges de texto en meses con alertas estacionales (Rev. Hipoteca, IPC Manutención, Rev. Alquiler IRAV).
+  * Fila de totales anuales acumulados por concepto.
+* [x] **Tarjetas de resumen anual**:
+  * Grid adaptable con tarjetas para: Hipoteca+Comunidad, Fondo de Fianza, Gastos Personales (solo Olga), Extraordinarios y Total Previsto.
+* [x] **Nota informativa contextual**:
+  * Texto explicativo en la parte inferior que varía según la persona seleccionada, describiendo las reglas de negocio aplicadas.
+* [x] **Corrección de warnings CSS de vendor prefix**:
+  * Añadida la propiedad estándar `background-clip: text` junto a `-webkit-background-clip: text` en los 4 selectores afectados (`.logo-text`, `.monto-transferencia.olga-color`, `.monto-transferencia.pedro-color`, `.progress-percentage`).
+
+---
+
 ## 📊 Fase 5: Parser de Extractos Bancarios y Conciliación Inteligente (Mediano Plazo)
 *Objetivo: Reducir la introducción manual de datos y digitalizar los desgloses mediante ficheros bancarios.*
 

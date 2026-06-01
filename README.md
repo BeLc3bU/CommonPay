@@ -1,12 +1,13 @@
 # 🪙 CommonPay - Gestión Financiera Inteligente
 
-CommonPay es una aplicación web responsiva e interactiva diseñada para la gestión financiera compartida entre Olga y Pedro. Permite calcular de forma completamente automática la transferencia mensual correspondiente a cada persona en base al mes seleccionado, gestionar un fondo de fianza común, almacenar el histórico de pagos, ver estadísticas anuales, emitir reportes y emitir alertas visuales de regularización contractual (hipoteca variable en septiembre, manutención por IPC en junio y alquiler por IRAV). Además, genera un calendario de pagos anual estructurado para Olga.
+CommonPay es una aplicación web responsiva e interactiva diseñada para la gestión financiera compartida entre Olga y Pedro. Permite calcular de forma completamente automática la transferencia mensual correspondiente a cada persona en base al mes seleccionado, gestionar un fondo de fianza común, almacenar el histórico de pagos, consultar la **previsión anual interactiva** de pagos por persona, ver estadísticas anuales y emitir alertas visuales de regularización contractual (hipoteca variable, manutención por IPC y alquiler por IRAV).
 
 ---
 
 ## ✨ Características Principales
 
 * **Dashboard Mensual**: Selector del mes en curso con recálculo dinámico automático de transferencias y desgloses de conceptos.
+* **Previsión Anual**: Vista dedicada con tabla mensual interactiva de los 12 meses del año para Olga y Pedro. Incluye tarjetas de resumen, highlight del mes actual, badges de alertas estacionales (Rev. Hipoteca, IPC Manutención, Rev. Alquiler IRAV) y totales anuales por concepto.
 * **Fondo de Fianza**: Barra de progreso interactiva para reponer una meta de **450,00 €** (aportaciones mensuales automáticas de 20,00 € o aportes extraordinarios manuales) con control para no superar el límite.
 * **Liquidación del Día 15**: Módulo de conciliación bancaria para comparar el saldo real de la cuenta común con la fianza acumulada ($F_A$). Calcula sobrantes (que Pedro retira para cubrir gastos, incluyendo la manutención de Olga) o déficits a aportar para proteger la fianza.
 * **Estadísticas Anuales**: Gráfico interactivo anual de evolución de gastos construido con **Chart.js**.
@@ -96,3 +97,5 @@ La aplicación incorpora una especificación para entornos de desarrollo asistid
 * **Subagente Calculadora ([SKILL.md](file:///c:/Proyectos/MamalotApp/.skills/calculator/SKILL.md))**: Procesa las consultas matemáticas de transferencias mensuales y estimaciones financieras.
 * **Subagente Configurador ([SKILL.md](file:///c:/Proyectos/MamalotApp/.skills/configurator/SKILL.md))**: Valida y guarda las modificaciones de cuotas y objetivos en `LocalStorage`.
 * **Subagente Exportador ([SKILL.md](file:///c:/Proyectos/MamalotApp/.skills/exporter/SKILL.md))**: Estructura la información del historial y desgloses para generar descargas en formato Excel o PDF.
+* **Subagente Publisher ([SKILL.md](file:///c:/Proyectos/MamalotApp/.skills/publisher/SKILL.md))**: Gestiona la sincronización con GitHub mediante `git` y `gh` CLI al recibir el comando `/subir`.
+* **Subagente Documenter ([SKILL.md](file:///c:/Proyectos/MamalotApp/.skills/documenter/SKILL.md))**: Mantiene al día el `README.md`, `ROADMAP.md` y el `walkthrough.md` al recibir el comando `/actualizar`.
