@@ -137,6 +137,7 @@ h1, h2, h3, h4, .font-title {
   font-size: 1.5rem;
   background: var(--primary-gradient);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -0.5px;
 }
@@ -417,12 +418,14 @@ input:checked + .slider:before {
 .monto-transferencia.olga-color {
   background: var(--primary-gradient);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .monto-transferencia.pedro-color {
   background: var(--secondary-gradient);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -524,6 +527,7 @@ input:checked + .slider:before {
   font-family: 'Outfit', sans-serif;
   background: var(--accent-gradient);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -1779,4 +1783,241 @@ tr:hover td {
   color: white;
 }
 
+/* =====================================================
+   VISTA: PREVISIÓN ANUAL
+   ===================================================== */
+
+/* --- Barra de controles superior --- */
+.prevision-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.75rem;
+}
+
+.prevision-controls-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.prevision-icon-header {
+  width: 42px;
+  height: 42px;
+  color: var(--primary);
+  flex-shrink: 0;
+}
+
+.prevision-controls-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.prevision-select-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.prevision-select-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.9rem;
+  color: var(--text-muted);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.prevision-select-wrapper i,
+.prevision-select-wrapper svg {
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.prevision-select-wrapper:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.prevision-select {
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 0.95rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  -webkit-appearance: none;
+  appearance: none;
+  min-width: 80px;
+}
+
+.prevision-select option {
+  background-color: var(--bg-sidebar);
+  color: var(--text-main);
+}
+
+/* --- Grid de tarjetas de resumen --- */
+.prevision-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.prevision-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.prevision-summary-big {
+  border-left: 3px solid var(--primary);
+}
+
+.prevision-summary-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.prevision-summary-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.prevision-summary-info {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.prevision-summary-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-bottom: 0.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prevision-summary-value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: 'Outfit', sans-serif;
+  white-space: nowrap;
+}
+
+/* --- Cabecera de la tabla --- */
+.prevision-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.75rem;
+  border-bottom: 1px solid var(--border-color);
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.prevision-total-badge {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary);
+  background-color: var(--primary-light);
+  padding: 0.35rem 0.85rem;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* --- Highlight del mes actual en la tabla --- */
+.prevision-row-actual td {
+  position: relative;
+}
+
+.prevision-row-actual td:first-child::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--primary-gradient);
+  border-radius: 0 2px 2px 0;
+}
+
+/* --- Badges de alertas estacionales --- */
+.prevision-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-top: 0.2rem;
+  margin-right: 0.3rem;
+}
+
+.prevision-badge.hipoteca {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.prevision-badge.ipc {
+  background-color: var(--warning-light);
+  color: var(--warning);
+}
+
+.prevision-badge.alquiler {
+  background-color: var(--success-light);
+  color: var(--success);
+}
+
+/* --- Nota informativa inferior --- */
+.prevision-nota {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 1.1rem 1.5rem;
+  margin-top: 1.5rem;
+  border-left: 3px solid var(--primary);
+}
+
+/* --- Responsive --- */
+@media (max-width: 900px) {
+  .prevision-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .prevision-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .prevision-summary-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .prevision-table-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
 

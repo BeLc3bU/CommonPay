@@ -38,7 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const conceptosPedroEl = document.getElementById('conceptos-pedro');
   const btnCompletarMes = document.getElementById('btn-completar-mes');
   const btnExportarPdfMes = document.getElementById('btn-exportar-pdf-mes');
-  const btnReporteAnualOlga = document.getElementById('btn-reporte-anual-olga');
   const alertasMesEl = document.getElementById('alertas-mes');
 
   // Vista Fianza
@@ -291,9 +290,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Exportación a PDF del desglose mensual
     btnExportarPdfMes.addEventListener('click', exportarPdfMes);
 
-    // Generar calendario anual para Olga
-    btnReporteAnualOlga.addEventListener('click', generarReporteAnualOlga);
-
     // Aportación extraordinaria manual a la fianza
     btnAportarManual.addEventListener('click', aportarManualFianza);
 
@@ -312,6 +308,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Google Calendar / iCal
     const btnExportarIcal = document.getElementById('btn-exportar-ical');
     if (btnExportarIcal) btnExportarIcal.addEventListener('click', exportarCalendarioIcs);
+
+    // Selector de persona en vista Previsión Anual
+    const selectPersona = document.getElementById('prevision-persona-select');
+    if (selectPersona) {
+      selectPersona.addEventListener('change', actualizarVistaPrevision);
+    }
 
     const btnGcalOlga = document.getElementById('btn-gcal-olga');
     if (btnGcalOlga) btnGcalOlga.addEventListener('click', () => abrirGoogleCalendar('olga'));
@@ -519,6 +521,11 @@ document.addEventListener('DOMContentLoaded', () => {
       pageSubtitle.innerText = "Controla el saldo del día 15, salvaguarda la fianza y liquida diferencias.";
       monthSelectorContainer.style.display = 'flex';
       actualizarVistaConciliacion();
+    } else if (viewId === 'prevision-view') {
+      pageTitle.innerText = 'Previsión Anual';
+      pageSubtitle.innerText = 'Consulta el calendario de aportaciones previstas mes a mes para cada persona.';
+      monthSelectorContainer.style.display = 'none';
+      actualizarVistaPrevision();
     }
 
     // Refrescar iconos y aplicar seguridad a controles
@@ -1108,6 +1115,143 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- EXPORTACIONES ---
   
+  // --- LÓGICA VISTA: PREVISIÓN ANUAL ---
+  function actualizarVistaPrevision() {
+    const selectPersona = document.getElementById('prevision-persona-select');
+    const persona = selectPersona ? selectPersona.value : 'olga';
+    const esOlga = persona === 'olga';
+    const colorPersona = esOlga ? 'var(--primary)' : '#3b82f6';
+    const colorLight = esOlga ? 'var(--primary-light)' : 'rgba(59,130,246,0.12)';
+    const alertas = appConfig.alertas || { mesHipoteca: 8, mesManutencion: 5, mesAlquiler: 10 };
+
+    // Actualizar cabecera de la tabla
+    const tableTitle = document.getElementById('prevision-table-title');
+    if (tableTitle) tableTitle.textContent = `Calendario de Aportaciones — ${esOlga ? 'Olga' : 'Pedro'}`;
+
+    // Mostrar/ocultar columnas personales (coche y manutención son de Olga)
+    const thCoche = document.getElementById('prevision-th-coche');
+    const thManutencion = document.getElementById('prevision-th-manutencion');
+    if (thCoche) thCoche.style.display = esOlga ? '' : 'none';
+    if (thManutencion) thManutencion.style.display = esOlga ? '' : 'none';
+
+    // Construir filas mes a mes
+    let totalAnual = 0;
+    let totalHipoteca = 0;
+    let totalComunidad = 0;
+    let totalFianza = 0;
+    let totalPersonal = 0;
+    let totalExtra = 0;
+    const mesActual = new Date().getMonth();
+    const tbody = document.getElementById('prevision-tabla-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    for (let m = 0; m < 12; m++) {
+      const desg = window.CalculationsModule.calcularDesgloseMes(m, appConfig);
+      const conceptos = esOlga ? desg.desgloseOlga.conceptos : desg.desglosePedro.conceptos;
+      const total = esOlga ? desg.desgloseOlga.total : desg.desglosePedro.total;
+
+      const hipoteca = conceptos.find(c => c.nombre.includes('Hipoteca'))?.valor || 0;
+      const comunidad = conceptos.find(c => c.nombre.includes('Comunidad'))?.valor || 0;
+      const fianza = conceptos.find(c => c.tipo === 'fianza')?.valor || 0;
+      const coche = esOlga ? (conceptos.find(c => c.nombre.includes('Coche'))?.valor || 0) : 0;
+      const manutencion = esOlga ? (conceptos.find(c => c.nombre.includes('Manutenci'))?.valor || 0) : 0;
+      const extraordinarios = conceptos.filter(c => c.tipo === 'extraordinario').reduce((s, c) => s + c.valor, 0);
+
+      totalAnual += total;
+      totalHipoteca += hipoteca;
+      totalComunidad += comunidad;
+      totalFianza += fianza;
+      totalPersonal += (coche + manutencion);
+      totalExtra += extraordinarios;
+
+      // Indicadores de meses especiales
+      let badges = '';
+      if (m === parseInt(alertas.mesHipoteca)) badges += `<span class="prevision-badge hipoteca">Rev. Hipoteca</span>`;
+      if (m === parseInt(alertas.mesManutencion)) badges += `<span class="prevision-badge ipc">IPC Manut.</span>`;
+      if (m === parseInt(alertas.mesAlquiler)) badges += `<span class="prevision-badge alquiler">Rev. Alquiler</span>`;
+
+      // Highlight mes actual
+      const esMesActual = m === mesActual;
+      const rowStyle = esMesActual ? `background-color:${colorLight};` : '';
+      const tdTotalStyle = `text-align:right;font-weight:700;color:${colorPersona};`;
+      const mesNombreHTML = `<span style="font-weight:600;">${NOMBRES_MESES[m]}</span>${badges ? '<br>' + badges : ''}`;
+
+      const tdCoche = esOlga ? `<td style="text-align:right;">${formatMoneda(coche)} €</td>` : '';
+      const tdManutencion = esOlga ? `<td style="text-align:right;">${formatMoneda(manutencion)} €</td>` : '';
+
+      const row = document.createElement('tr');
+      if (esMesActual) row.classList.add('prevision-row-actual');
+      row.style.cssText = rowStyle;
+      row.innerHTML = `
+        <td style="padding:1rem 1.5rem;">${mesNombreHTML}</td>
+        <td style="text-align:right;">${formatMoneda(hipoteca)} €</td>
+        <td style="text-align:right;">${formatMoneda(comunidad)} €</td>
+        <td style="text-align:right;">${formatMoneda(fianza)} €</td>
+        ${tdCoche}
+        ${tdManutencion}
+        <td style="text-align:right;">${extraordinarios > 0 ? formatMoneda(extraordinarios) + ' €' : '<span style="color:var(--text-muted)">—</span>'}</td>
+        <td style="${tdTotalStyle}padding:1rem 1.5rem;">${formatMoneda(total)} €</td>
+      `;
+      tbody.appendChild(row);
+    }
+
+    // Fila de totales
+    const tdCocheTot = esOlga ? `<td style="text-align:right;font-weight:700;">-</td>` : '';
+    const tdManutencionTot = esOlga ? `<td style="text-align:right;font-weight:700;">-</td>` : '';
+    const rowTotal = document.createElement('tr');
+    rowTotal.style.cssText = `background-color:${colorLight};border-top:2px solid ${colorPersona};`;
+    rowTotal.innerHTML = `
+      <td style="padding:1.1rem 1.5rem;font-weight:800;font-family:'Outfit',sans-serif;font-size:1rem;">TOTAL ANUAL</td>
+      <td style="text-align:right;font-weight:700;">${formatMoneda(totalHipoteca)} €</td>
+      <td style="text-align:right;font-weight:700;">${formatMoneda(totalComunidad)} €</td>
+      <td style="text-align:right;font-weight:700;">${formatMoneda(totalFianza)} €</td>
+      ${tdCocheTot}
+      ${tdManutencionTot}
+      <td style="text-align:right;font-weight:700;">${formatMoneda(totalExtra)} €</td>
+      <td style="text-align:right;font-weight:800;color:${colorPersona};font-size:1.05rem;padding:1.1rem 1.5rem;">${formatMoneda(totalAnual)} €</td>
+    `;
+    tbody.appendChild(rowTotal);
+
+    // Badge total
+    const totalBadge = document.getElementById('prevision-total-badge');
+    if (totalBadge) totalBadge.textContent = `Total previsto: ${formatMoneda(totalAnual)} €`;
+
+    // Tarjetas de resumen
+    const summaryGrid = document.getElementById('prevision-summary-grid');
+    if (summaryGrid) {
+      const conceptosResumen = [
+        { label: 'Hipoteca + Comunidad', valor: totalHipoteca + totalComunidad, icon: 'home', color: 'var(--primary)', light: 'var(--primary-light)' },
+        { label: 'Fondo de Fianza', valor: totalFianza, icon: 'piggy-bank', color: 'var(--success)', light: 'var(--success-light)' },
+        ...(esOlga ? [{ label: 'Gastos Personales', valor: totalPersonal, icon: 'car', color: '#f59e0b', light: 'var(--warning-light)' }] : []),
+        { label: 'Extraordinarios', valor: totalExtra, icon: 'sparkles', color: '#d97706', light: 'rgba(217,119,6,0.1)' },
+        { label: 'Total Previsto', valor: totalAnual, icon: 'trending-up', color: colorPersona, light: colorLight, big: true }
+      ];
+      summaryGrid.innerHTML = conceptosResumen.map(item => `
+        <div class="prevision-summary-card glass-card${item.big ? ' prevision-summary-big' : ''}">
+          <div class="prevision-summary-icon" style="background-color:${item.light};color:${item.color};">
+            <i data-lucide="${item.icon}"></i>
+          </div>
+          <div class="prevision-summary-info">
+            <div class="prevision-summary-label">${item.label}</div>
+            <div class="prevision-summary-value" style="color:${item.color};">${formatMoneda(item.valor)} €</div>
+          </div>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    // Nota informativa
+    const notaTexto = document.getElementById('prevision-nota-texto');
+    if (notaTexto) {
+      if (esOlga) {
+        notaTexto.innerHTML = `<strong>Olga:</strong> Los gastos comunes (Hipoteca Neta y Comunidad) se calculan al 50%. Los gastos personales incluyen coche y manutención, esta última se actualiza según IPC en ${NOMBRES_MESES[parseInt(alertas.mesManutencion)]}. Los extraordinarios (IBI, Seguro) se prorratean entre ambas personas en los meses correspondientes. La fila resaltada indica el mes actual.`;
+      } else {
+        notaTexto.innerHTML = `<strong>Pedro:</strong> Los gastos comunes (Hipoteca Neta y Comunidad) se calculan al 50%. Pedro no tiene gastos personales fijos asignados actualmente. Los extraordinarios (IBI, Seguro) se prorratean en los meses configurados. La hipoteca se revisa en ${NOMBRES_MESES[parseInt(alertas.mesHipoteca)]} y el alquiler en ${NOMBRES_MESES[parseInt(alertas.mesAlquiler)]}. La fila resaltada indica el mes actual.`;
+      }
+    }
+  }
+
   // EXPORTAR MES EN CURSO A PDF
   function exportarPdfMes() {
     const mesNombre = NOMBRES_MESES[currentMonthIndex];

@@ -49,6 +49,11 @@
               </a>
             </li>
             <li class="nav-item">
+              <a class="nav-link" data-target="prevision-view" id="nav-prevision">
+                <i data-lucide="calendar-range"></i> Previsión Anual
+              </a>
+            </li>
+            <li class="nav-item">
               <a class="nav-link" data-target="fianza-view" id="nav-fianza">
                 <i data-lucide="piggy-bank"></i> Fondo Fianza
               </a>
@@ -239,9 +244,6 @@
             </p>
           </div>
           <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-            <button class="btn btn-secondary" id="btn-reporte-anual-olga" style="background: var(--orange-gradient); color: white;">
-              <i data-lucide="calendar-days"></i> Calendario Anual Olga
-            </button>
             <button class="btn btn-secondary" id="btn-exportar-pdf-mes">
               <i data-lucide="file-text"></i> PDF
             </button>
@@ -711,6 +713,71 @@
 
       </section>
 
+      <!-- SECCIÓN 6: PREVISIÓN ANUAL -->
+      <section id="prevision-view" class="view-section">
+
+        <!-- CONTROLES DE SELECCIÓN -->
+        <div class="prevision-controls glass-card">
+          <div class="prevision-controls-left">
+            <i data-lucide="calendar-range" class="prevision-icon-header"></i>
+            <div>
+              <h3 style="font-size: 1.1rem; margin-bottom: 0.1rem;">Previsión de Pagos <span id="prevision-anio">2026</span></h3>
+              <p style="font-size: 0.85rem; color: var(--text-muted);">Desglose mensual completo de transferencias previstas</p>
+            </div>
+          </div>
+          <div class="prevision-controls-right">
+            <label class="prevision-select-label" for="prevision-persona-select">Ver previsión de:</label>
+            <div class="prevision-select-wrapper">
+              <i data-lucide="user" style="width:16px;height:16px;"></i>
+              <select id="prevision-persona-select" class="prevision-select">
+                <option value="olga">Olga</option>
+                <option value="pedro">Pedro</option>
+              </select>
+              <i data-lucide="chevron-down" style="width:14px;height:14px;opacity:0.5;"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- RESUMEN ANUAL TOP -->
+        <div class="prevision-summary-grid" id="prevision-summary-grid">
+          <!-- Inyectado por JS -->
+        </div>
+
+        <!-- TABLA MENSUAL -->
+        <div class="glass-card" style="padding: 0; overflow: hidden;">
+          <div class="prevision-table-header">
+            <h3 id="prevision-table-title" style="font-size: 1.1rem;">Calendario de Aportaciones — Olga</h3>
+            <span id="prevision-total-badge" class="prevision-total-badge"></span>
+          </div>
+          <div class="table-wrapper" style="border: none; border-radius: 0;">
+            <table id="prevision-tabla" style="min-width: 680px;">
+              <thead>
+                <tr>
+                  <th>Mes</th>
+                  <th style="text-align:right;">Hipoteca (50%)</th>
+                  <th style="text-align:right;">Comunidad (50%)</th>
+                  <th style="text-align:right;">Fianza</th>
+                  <th id="prevision-th-coche" style="text-align:right;">Coche</th>
+                  <th id="prevision-th-manutencion" style="text-align:right;">Manutención</th>
+                  <th style="text-align:right;">Extraordinarios</th>
+                  <th style="text-align:right; color: var(--primary);">Total</th>
+                </tr>
+              </thead>
+              <tbody id="prevision-tabla-body">
+                <!-- Inyectado por JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- NOTA INFORMATIVA -->
+        <div class="prevision-nota glass-card">
+          <i data-lucide="info" style="width:18px;height:18px;color:var(--primary);flex-shrink:0;"></i>
+          <p id="prevision-nota-texto" style="font-size:0.88rem;color:var(--text-muted);line-height:1.6;"></p>
+        </div>
+
+      </section>
+
     </main>
 
   </div>
@@ -745,8 +812,7 @@
     </div>
   </div>
 
-  <!-- Contenedor estático oculto para la generación de reportes PDF -->
-  <div id="reporte-anual-olga-container" style="position: absolute; left: -9999px; top: 0; width: 1120px; padding: 25px; font-family: 'Inter', sans-serif; color: #1e293b; background-color: #ffffff;"></div>
+  <!-- Contenedor estático oculto para la generación de reportes PDF del mes -->
 
   <!-- Inyección de módulos JavaScript -->
   <script src="js/storage.js"></script>
