@@ -4,6 +4,7 @@
 
 const CONFIG_KEY = 'commonpay_config';
 const FIANZA_ACUMULADO_KEY = 'commonpay_fianza_acumulado';
+const FIANZA_HISTORIAL_KEY = 'commonpay_fianza_historial';
 const HISTORIAL_KEY = 'commonpay_historial';
 const THEME_KEY = 'commonpay_theme';
 
@@ -531,6 +532,127 @@ async function deleteConciliacion(id, mesIndex, anio) {
   localStorage.setItem(CONCILIACIONES_KEY, JSON.stringify(lista));
 }
 
+// --- HISTORIAL DE FIANZA ---
+
+function mapearMovimientoFianzaAJs(dbRow) {
+  return {
+    id: dbRow.id,
+    fecha: dbRow.fecha,
+    concepto: dbRow.concepto,
+    importe: parseFloat(dbRow.importe),
+    acumuladoDespues: parseFloat(dbRow.acumulado_despues)
+  };
+}
+
+function mapearMovimientoFianzaADb(jsRow) {
+  return {
+    fecha: jsRow.fecha || new Date().toISOString(),
+    concepto: jsRow.concepto,
+    importe: jsRow.importe,
+    acumulado_despues: jsRow.acumuladoDespues
+  };
+}
+
+/**
+ * Obtiene el historial de movimientos de fianza.
+ */
+async function getFianzaHistorial() {
+  if (isSupabaseActive) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('fianza_historial')
+        .select('*')
+        .order('fecha', { ascending: false });
+
+      if (error) throw error;
+      return (data || []).map(mapearMovimientoFianzaAJs);
+    } catch (err) {
+      console.error("Error al leer historial de fianza de Supabase. Usando LocalStorage:", err);
+    }
+  }
+
+  // Fallback LocalStorage
+  const data = localStorage.getItem(FIANZA_HISTORIAL_KEY);
+  if (!data) {
+    localStorage.setItem(FIANZA_HISTORIAL_KEY, JSON.stringify([]));
+    return [];
+  }
+  try {
+    return JSON.parse(data);
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
+ * Añade un movimiento al historial de fianza.
+ */
+async function addMovimientoFianza(concepto, importe, acumuladoDespues) {
+  const nuevoMovimiento = {
+    id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9),
+    fecha: new Date().toISOString(),
+    concepto,
+    importe,
+    acumuladoDespues
+  };
+
+  if (isSupabaseActive) {
+    try {
+      const user = await obtenerUsuarioActivo();
+      if (!user) {
+        throw new Error("No tienes permisos de edición. Inicia sesión primero.");
+      }
+      
+      const dbRow = mapearMovimientoFianzaADb(nuevoMovimiento);
+      const { error } = await supabaseClient
+        .from('fianza_historial')
+        .insert(dbRow);
+
+      if (error) throw error;
+      return nuevoMovimiento;
+    } catch (err) {
+      console.error("Error al añadir movimiento de fianza en Supabase:", err);
+      throw err;
+    }
+  }
+
+  // Fallback LocalStorage
+  const historial = await getFianzaHistorial();
+  historial.unshift(nuevoMovimiento);
+  localStorage.setItem(FIANZA_HISTORIAL_KEY, JSON.stringify(historial));
+  return nuevoMovimiento;
+}
+
+/**
+ * Elimina un movimiento del historial de fianza.
+ */
+async function deleteMovimientoFianza(id) {
+  if (isSupabaseActive) {
+    try {
+      const user = await obtenerUsuarioActivo();
+      if (!user) {
+        throw new Error("No tienes permisos de edición. Inicia sesión primero.");
+      }
+
+      const { error } = await supabaseClient
+        .from('fianza_historial')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      return;
+    } catch (err) {
+      console.error("Error al eliminar movimiento de fianza en Supabase:", err);
+      throw err;
+    }
+  }
+
+  // Fallback LocalStorage
+  let historial = await getFianzaHistorial();
+  historial = historial.filter(m => m.id !== id);
+  localStorage.setItem(FIANZA_HISTORIAL_KEY, JSON.stringify(historial));
+}
+
 /**
  * Obtiene el tema guardado localmente ('light' o 'dark').
  */
@@ -562,6 +684,9 @@ window.StorageModule = {
   getConciliaciones,
   addConciliacion,
   deleteConciliacion,
+  getFianzaHistorial,
+  addMovimientoFianza,
+  deleteMovimientoFianza,
   getTheme,
   saveTheme
 };

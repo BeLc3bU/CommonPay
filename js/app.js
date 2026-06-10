@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- VARIABLES DE ESTADO ---
   let appConfig = {};
   let fianzaAcumulado = 0.0;
+  let fianzaHistorial = [];
   let historialTransferencias = [];
   let conciliaciones = [];
   let currentMonthIndex = new Date().getMonth(); // Mes actual del sistema
@@ -52,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const inputAportacionExtra = document.getElementById('input-aportacion-extra');
   const btnAportarManual = document.getElementById('btn-aportar-manual');
   const btnRetirarManual = document.getElementById('btn-retirar-manual');
+  const tablaFianzaHistorialBody = document.getElementById('tabla-fianza-historial-body');
 
   // Vista Estadísticas
   const statsTotalOlgaEl = document.getElementById('stats-total-olga');
@@ -112,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 3. Cargar datos desde la nube o LocalStorage (asíncrono)
     appConfig = await window.StorageModule.getConfiguration();
     fianzaAcumulado = await window.StorageModule.getFianzaAcumulado();
+    fianzaHistorial = await window.StorageModule.getFianzaHistorial();
     historialTransferencias = await window.StorageModule.getHistorial();
     conciliaciones = await window.StorageModule.getConciliaciones();
 
@@ -651,7 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- LÓGICA VISTA: FONDO FIANZA ---
-  function actualizarVistaFianza() {
+  async function actualizarVistaFianza() {
     const objetivo = appConfig.fianza.objective || appConfig.fianza.objetivo || 450.00;
     const actual = fianzaAcumulado;
     const pendiente = Math.max(0, window.CalculationsModule.round(objetivo - actual));
@@ -682,10 +685,78 @@ document.addEventListener('DOMContentLoaded', () => {
       btnRetirarManual.disabled = !isPedroEditor || (actual <= 0);
       inputAportacionExtra.disabled = !isPedroEditor;
     }
+
+    // Actualizar tabla del historial de fianza
+    try {
+      fianzaHistorial = await window.StorageModule.getFianzaHistorial();
+      actualizarTablaFianzaHistorial();
+    } catch (err) {
+      console.error("Error al actualizar la tabla de historial de fianza:", err);
+    }
     
     // Aplicar opacidades según rol
     actualizarControlesEdicion(isPedroEditor);
     lucide.createIcons();
+  }
+
+  function actualizarTablaFianzaHistorial() {
+    if (!tablaFianzaHistorialBody) return;
+    tablaFianzaHistorialBody.innerHTML = '';
+
+    if (!fianzaHistorial || fianzaHistorial.length === 0) {
+      tablaFianzaHistorialBody.innerHTML = `
+        <tr>
+          <td colspan="5" class="empty-state" style="text-align: center; padding: 2.5rem 0.5rem; color: var(--text-muted);">
+            <i data-lucide="inbox" style="width: 28px; height: 28px; margin-bottom: 0.5rem; opacity: 0.7; display: block; margin-left: auto; margin-right: auto;"></i>
+            No hay movimientos registrados en el fondo de fianza.
+          </td>
+        </tr>
+      `;
+      lucide.createIcons();
+      return;
+    }
+
+    fianzaHistorial.forEach(m => {
+      const row = document.createElement('tr');
+      const fecha = new Date(m.fecha);
+      const fechaFormateada = `${agregarCero(fecha.getDate())}/${agregarCero(fecha.getMonth() + 1)}/${fecha.getFullYear()} ${agregarCero(fecha.getHours())}:${agregarCero(fecha.getMinutes())}`;
+      
+      const esPositivo = m.importe >= 0;
+      const claseImporte = esPositivo ? 'text-success' : 'text-danger';
+      const signo = esPositivo ? '+' : '';
+
+      row.innerHTML = `
+        <td style="color: var(--text-muted); font-size: 0.85rem; padding: 0.75rem 0.5rem;">${fechaFormateada}</td>
+        <td style="font-weight: 500; padding: 0.75rem 0.5rem;">${m.concepto}</td>
+        <td class="${claseImporte} font-title" style="font-weight: 600; text-align: right; padding: 0.75rem 0.5rem;">${signo}${formatMoneda(m.importe)} €</td>
+        <td class="font-title" style="font-weight: 600; text-align: right; color: var(--text-main); padding: 0.75rem 0.5rem;">${formatMoneda(m.acumuladoDespues)} €</td>
+        <td style="text-align: center; padding: 0.75rem 0.5rem;">
+          <button class="btn-icon delete btn-delete-fianza-mov" title="Eliminar Movimiento" data-id="${m.id}">
+            <i data-lucide="trash-2"></i>
+          </button>
+        </td>
+      `;
+
+      // Evento de borrado
+      const btnDelete = row.querySelector('.btn-delete-fianza-mov');
+      btnDelete.addEventListener('click', async () => {
+        if (!isPedroEditor) return;
+        if (confirm(`¿Estás seguro de que deseas eliminar el movimiento "${m.concepto}"? Esto revertirá su impacto de ${formatMoneda(m.importe)} € en el saldo actual de la fianza.`)) {
+          const nuevoAcumulado = window.CalculationsModule.round(fianzaAcumulado - m.importe);
+          try {
+            await window.StorageModule.saveFianzaAcumulado(nuevoAcumulado);
+            await window.StorageModule.deleteMovimientoFianza(m.id);
+            fianzaAcumulado = nuevoAcumulado;
+            actualizarInterfaz();
+            alert("Movimiento eliminado y saldo de la fianza actualizado con éxito.");
+          } catch (e) {
+            alert("Error al intentar eliminar el movimiento de la base de datos.");
+          }
+        }
+      });
+
+      tablaFianzaHistorialBody.appendChild(row);
+    });
   }
 
   async function aportarManualFianza() {
@@ -714,6 +785,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     try {
       await window.StorageModule.saveFianzaAcumulado(fianzaAcumulado);
+      await window.StorageModule.addMovimientoFianza('Aportación manual', aportacionReal, fianzaAcumulado);
       inputAportacionExtra.value = '';
       actualizarInterfaz();
       alert(`Se han añadido ${formatMoneda(aportacionReal)} € al fondo de la fianza con éxito.`);
@@ -745,6 +817,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     try {
       await window.StorageModule.saveFianzaAcumulado(fianzaAcumulado);
+      await window.StorageModule.addMovimientoFianza('Retiro manual', -retiroReal, fianzaAcumulado);
       inputAportacionExtra.value = '';
       actualizarInterfaz();
       alert(`Se han retirado ${formatMoneda(retiroReal)} € del fondo de la fianza con éxito.`);
@@ -780,6 +853,9 @@ document.addEventListener('DOMContentLoaded', () => {
       
       try {
         await window.StorageModule.saveFianzaAcumulado(fianzaAcumulado);
+        if (aportacionRealizada > 0) {
+          await window.StorageModule.addMovimientoFianza(`Aportación mensual (${NOMBRES_MESES[currentMonthIndex]})`, aportacionRealizada, fianzaAcumulado);
+        }
       } catch (err) {
         console.error("Error al registrar fianza acumulada en base de datos. Continuando registro de mes:", err);
       }
