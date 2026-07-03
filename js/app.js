@@ -85,7 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Elementos del DOM de Autenticación
   const authStatusEl = document.getElementById('auth-status');
-  const authTextEl = document.getElementById('auth-text');
   const btnAuthAction = document.getElementById('btn-auth-action');
   const loginModal = document.getElementById('login-modal');
   const btnCloseLogin = document.getElementById('btn-close-login');
@@ -595,7 +594,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // --- NAVEGACIÓN ---
-  function cambiarVista(viewId, activeLink) {
+  function cambiarVista(viewId, _activeLink) {
     // Validar acceso restringido a vistas de editor (Liquidación y Ajustes)
     if ((viewId === 'conciliacion-view' || viewId === 'config-view') && !isPedroEditor) {
       alert('Acceso restringido. Debes iniciar sesión como Editor para acceder a esta sección.');
@@ -1593,155 +1592,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     html2pdf().set(opt).from(element).save();
-  }
-
-  function generarReporteAnualOlga() {
-    const alertas = appConfig.alertas || { mesHipoteca: 8, mesManutencion: 5, mesAlquiler: 10 };
-
-    // Contenedor temporal para renderizar el PDF
-    const printContainer = document.createElement('div');
-    printContainer.style.padding = '25px';
-    printContainer.style.fontFamily = "'Inter', sans-serif";
-    printContainer.style.color = '#1e293b';
-    printContainer.style.backgroundColor = '#ffffff';
-
-    // Generamos las filas de la tabla
-    let tablaHTML = '';
-    let totalAcumuladoOlga = 0;
-
-    for (let m = 0; m < 12; m++) {
-      const desg = window.CalculationsModule.calcularDesgloseMes(m, appConfig);
-      const conceptos = desg.desgloseOlga.conceptos;
-      totalAcumuladoOlga += desg.desgloseOlga.total;
-
-      // Extraer importes
-      const hipoteca = conceptos.find((c) => c.nombre.includes('Hipoteca'))?.valor || 0;
-      const comunidad = conceptos.find((c) => c.nombre.includes('Comunidad'))?.valor || 0;
-      const coche = conceptos.find((c) => c.nombre.includes('Coche'))?.valor || 0;
-      const manutencion = conceptos.find((c) => c.nombre.includes('Manutención'))?.valor || 0;
-      const fianza =
-        conceptos.find((c) => c.nombre.includes('Fianza') || c.nombre.includes('Fondo'))?.valor ||
-        0;
-
-      // Sumar extraordinarios
-      const extraordinarios = conceptos
-        .filter((c) => c.tipo === 'extraordinario')
-        .reduce((sum, c) => sum + c.valor, 0);
-
-      // Indicadores estacionales
-      let notaMes = '';
-      if (m === parseInt(alertas.mesHipoteca)) {
-        notaMes +=
-          '<span style="font-size:0.75rem; color:#d97706; font-weight:600; display:block;">(Rev. Hipoteca)</span>';
-      }
-      if (m === parseInt(alertas.mesManutencion)) {
-        notaMes +=
-          '<span style="font-size:0.75rem; color:#d97706; font-weight:600; display:block;">(IPC Manutención)</span>';
-      }
-      if (m === parseInt(alertas.mesAlquiler)) {
-        notaMes +=
-          '<span style="font-size:0.75rem; color:#d97706; font-weight:600; display:block;">(Rev. Alquiler IRAV)</span>';
-      }
-
-      tablaHTML += `
-        <tr style="border-bottom: 1px solid #e2e8f0;">
-          <td style="padding: 10px; font-weight: 600;">${NOMBRES_MESES[m]} ${notaMes}</td>
-          <td style="padding: 10px; text-align: right;">${formatMoneda(hipoteca)} €</td>
-          <td style="padding: 10px; text-align: right;">${formatMoneda(comunidad)} €</td>
-          <td style="padding: 10px; text-align: right;">${formatMoneda(fianza)} €</td>
-          <td style="padding: 10px; text-align: right;">${formatMoneda(coche)} €</td>
-          <td style="padding: 10px; text-align: right;">${formatMoneda(manutencion)} €</td>
-          <td style="padding: 10px; text-align: right;">${formatMoneda(extraordinarios)} €</td>
-          <td style="padding: 10px; text-align: right; font-weight: 700; color: #4f46e5;">${formatMoneda(desg.desgloseOlga.total)} €</td>
-        </tr>
-      `;
-    }
-
-    printContainer.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4f46e5; padding-bottom: 15px; margin-bottom: 20px;">
-        <div>
-          <h1 style="font-family: 'Outfit', sans-serif; font-size: 1.8rem; margin: 0; color: #4f46e5;">CommonPay</h1>
-          <p style="font-size: 0.85rem; color: #64748b; margin: 2px 0 0 0;">Planificación Anual de Pagos 2026</p>
-        </div>
-        <div style="text-align: right; padding-top: 5px;">
-          <span style="font-weight: 700; color: #1e293b; font-size: 1.05rem;">Destinatario: Olga</span>
-        </div>
-      </div>
-
-      <div style="margin-bottom: 20px; display: flex; gap: 15px;">
-        <div style="flex: 2; font-size: 0.9rem; line-height: 1.5; color: #334155; background-color: #f8fafc; padding: 15px; border-radius: 8px; border-left: 4px solid #6366f1; margin: 0;">
-          <strong>Información de Contexto de Gastos Comunes:</strong><br>
-          Este calendario detalla las aportaciones mensuales correspondientes a Olga para el año 2026. Los gastos comunes (Hipoteca Neta y Comunidad) se calculan al 50%. Los gastos extraordinarios del IBI (306,63 €) se prorratean en Ene/Feb/Mar y el Seguro de Hogar (108,20 €) se imputa en Abril. Las aportaciones al fondo de fianza de 10 €/mes se incluyen hasta reponer el objetivo acumulado de 450 €. 
-          Las fechas marcadas indican los meses de regularización contractual.
-        </div>
-        <div style="flex: 1; font-size: 0.85rem; background-color: #f0fdf4; border-left: 4px solid #16a34a; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; justify-content: center;">
-          <strong>Estado del Fondo de Fianza:</strong>
-          <div style="margin-top: 5px; display: grid; grid-template-columns: 1.5fr 1fr; gap: 5px;">
-            <span>Objetivo Fianza:</span><strong style="text-align: right;">${formatMoneda(appConfig.fianza.objetivo)} €</strong>
-            <span>Fondo Acumulado:</span><strong style="text-align: right; color: #16a34a;">${formatMoneda(fianzaAcumulado)} €</strong>
-            <span>Saldo Pendiente:</span><strong style="text-align: right; color: #b45309;">${formatMoneda(Math.max(0, window.CalculationsModule.round(appConfig.fianza.objetivo - fianzaAcumulado)))} €</strong>
-          </div>
-        </div>
-      </div>
-
-      <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 25px;">
-        <thead>
-          <tr style="background-color: #f1f5f9; border-bottom: 2px solid #cbd5e1;">
-            <th style="padding: 10px; text-align: left; font-weight: 600;">Mes</th>
-            <th style="padding: 10px; text-align: right; font-weight: 600;">Hipoteca (50%)</th>
-            <th style="padding: 10px; text-align: right; font-weight: 600;">Comunidad (50%)</th>
-            <th style="padding: 10px; text-align: right; font-weight: 600;">Fianza</th>
-            <th style="padding: 10px; text-align: right; font-weight: 600;">Coche</th>
-            <th style="padding: 10px; text-align: right; font-weight: 600;">Manutención</th>
-            <th style="padding: 10px; text-align: right; font-weight: 600;">Extraordinarios</th>
-            <th style="padding: 10px; text-align: right; font-weight: 600; background-color: #e0e7ff; color: #4338ca;">Total Olga</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tablaHTML}
-          <tr style="background-color: #f8fafc; border-top: 2px solid #cbd5e1; font-weight: 700; font-size: 0.95rem;">
-            <td style="padding: 15px 10px;" colspan="7">Total Previsión Anual Acumulada:</td>
-            <td style="padding: 15px 10px; text-align: right; color: #4f46e5; background-color: #e0e7ff;">${formatMoneda(totalAcumuladoOlga)} €</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div style="font-size: 0.75rem; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 15px; display: flex; justify-content: space-between; align-items: center; margin-top: 30px;">
-        <span>Generado automáticamente por CommonPay</span>
-        <span>Fecha de Emisión: ${new Date().toLocaleDateString('es-ES')}</span>
-      </div>
-    `;
-
-    // Configuración de descarga PDF
-    const opt = {
-      margin: 15,
-      filename: 'CommonPay_Prevision_Anual_Olga_2026.pdf',
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-    };
-
-    // html2canvas NECESITA que el elemento esté en el DOM para renderizar
-    printContainer.style.position = 'fixed';
-    printContainer.style.top = '-9999px';
-    printContainer.style.left = '0';
-    printContainer.style.width = '1122px'; // Ancho A4 landscape a 96dpi
-    printContainer.style.zIndex = '-1';
-    document.body.appendChild(printContainer);
-
-    html2pdf()
-      .set(opt)
-      .from(printContainer)
-      .save()
-      .then(() => {
-        document.body.removeChild(printContainer);
-      })
-      .catch((err) => {
-        console.error('Error al generar PDF de Olga:', err);
-        if (document.body.contains(printContainer)) {
-          document.body.removeChild(printContainer);
-        }
-      });
   }
 
   // EXPORTAR HISTORIAL A EXCEL (XLSX)

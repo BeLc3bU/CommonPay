@@ -71,12 +71,12 @@ async function inicializarSupabase() {
       if (typeof supabase !== 'undefined') {
         supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
         isSupabaseActive = true;
-        console.log('Supabase inicializado correctamente.');
+        console.info('Supabase inicializado correctamente.');
       } else {
         console.warn('Librería de Supabase no cargada en el DOM. Usando LocalStorage.');
       }
     } else {
-      console.log('No se detectó configuración de Supabase. Usando LocalStorage (Modo Local).');
+      console.info('No se detectó configuración de Supabase. Usando LocalStorage (Modo Local).');
     }
   } catch (error) {
     console.error('Error al inicializar Supabase. Cayendo en LocalStorage:', error);
@@ -96,7 +96,7 @@ async function obtenerUsuarioActivo() {
     } = await supabaseClient.auth.getUser();
     if (error) return null;
     return user;
-  } catch (e) {
+  } catch (_e) {
     return null;
   }
 }
@@ -188,7 +188,7 @@ async function getConfiguration() {
   }
   try {
     return JSON.parse(data);
-  } catch (e) {
+  } catch (_e) {
     return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
   }
 }
@@ -320,7 +320,7 @@ async function getHistorial() {
   }
   try {
     return JSON.parse(data);
-  } catch (e) {
+  } catch (_e) {
     return [];
   }
 }
@@ -457,7 +457,7 @@ async function getConciliaciones() {
   }
   try {
     return JSON.parse(data);
-  } catch (e) {
+  } catch (_e) {
     return [];
   }
 }
@@ -577,7 +577,7 @@ async function getFianzaHistorial() {
   }
   try {
     return JSON.parse(data);
-  } catch (e) {
+  } catch (_e) {
     return [];
   }
 }
