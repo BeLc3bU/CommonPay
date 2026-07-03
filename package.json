@@ -1,0 +1,23 @@
+{
+  "name": "commonpay",
+  "version": "1.0.0",
+  "description": "Gestión financiera inteligente para el hogar",
+  "main": "index.html",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint \"js/**/*.js\" \"api/**/*.js\"",
+    "format": "prettier --write \"js/**/*.js\" \"api/**/*.js\" \"css/**/*.css\" \"*.html\" \"*.json\""
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "jsdom": "^24.0.0",
+    "prettier": "^3.2.5",
+    "vite": "^5.2.0",
+    "vitest": "^1.4.0"
+  }
+}

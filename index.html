@@ -1,864 +1,1237 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CommonPay - Gestión Financiera Inteligente</title>
-  <meta name="description" content="Aplicación de control financiero doméstico. Calcula aportaciones, gastos comunes y fianza de forma automática.">
-  <link rel="stylesheet" href="css/style.css">
-  <script>
-    (function() {
-      const savedTheme = localStorage.getItem('commonpay_theme') || 'light';
-      document.documentElement.setAttribute('data-theme', savedTheme);
-    })();
-  </script>
-  
-  <!-- CDNs de librerías esenciales -->
-  <!-- Chart.js para visualización de gráficas -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- XLSX / SheetJS para exportar a Excel -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <!-- html2pdf.js para exportar desglose de gastos a PDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <!-- Lucide Icons para iconografía SVG interactiva -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Supabase JS Client para base de datos y autenticación en la nube -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CommonPay - Gestión Financiera Inteligente</title>
+    <meta
+      name="description"
+      content="Aplicación de control financiero doméstico. Calcula aportaciones, gastos comunes y fianza de forma automática."
+    />
+    <link rel="stylesheet" href="css/style.css" />
+    <script>
+      (function () {
+        const savedTheme = localStorage.getItem('commonpay_theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      })();
+    </script>
 
-  <!-- Configuración de PWA (Progressive Web App) -->
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#4f46e5">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="CommonPay">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <!-- CDNs de librerías esenciales -->
+    <!-- Chart.js para visualización de gráficas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- XLSX / SheetJS para exportar a Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- html2pdf.js para exportar desglose de gastos a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Lucide Icons para iconografía SVG interactiva -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase JS Client para base de datos y autenticación en la nube -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
-          .then(reg => console.log('Service Worker registrado con éxito:', reg.scope))
-          .catch(err => console.error('Error al registrar el Service Worker:', err));
-      });
-    }
-  </script>
-</head>
-<body>
+    <!-- Configuración de PWA (Progressive Web App) -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#4f46e5" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CommonPay" />
+    <link rel="apple-touch-icon" href="icons/icon-192.png" />
 
-  <div class="app-container">
-    
-    <!-- BARRA LATERAL DE NAVEGACIÓN -->
-    <aside class="sidebar" id="sidebar">
-      <!-- BOTÓN CERRAR EN MÓVIL -->
-      <button class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Cerrar menú">
-        <i data-lucide="x"></i>
-      </button>
-      <div>
-        <div class="logo-container">
-          <div class="logo-icon">C</div>
-          <h1 class="logo-text">CommonPay</h1>
-        </div>
-        
-        <nav>
-          <ul class="nav-links">
-            <li class="nav-item">
-              <a class="nav-link active" data-target="dashboard-view" id="nav-dashboard">
-                <i data-lucide="layout-dashboard"></i> Dashboard
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" data-target="prevision-view" id="nav-prevision">
-                <i data-lucide="calendar-range"></i> Previsión Anual
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" data-target="fianza-view" id="nav-fianza">
-                <i data-lucide="piggy-bank"></i> Fondo Fianza
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" data-target="stats-view" id="nav-stats">
-                <i data-lucide="trending-up"></i> Estadísticas
-              </a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" data-target="historial-view" id="nav-historial">
-                <i data-lucide="history"></i> Historial
-              </a>
-            </li>
-            <li class="nav-item editor-only-nav" style="display: none;">
-              <a class="nav-link" data-target="conciliacion-view" id="nav-conciliacion">
-                <i data-lucide="scale"></i> Liquidación (15)
-              </a>
-            </li>
-            <li class="nav-item editor-only-nav" style="display: none;">
-              <a class="nav-link" data-target="config-view" id="nav-config">
-                <i data-lucide="settings"></i> Ajustes
-              </a>
-            </li>
-          </ul>
-        </nav>
-      </div>
-
-      <!-- FOOTER DE SIDEBAR CON TEMA Y USUARIOS -->
-      <div class="sidebar-footer">
-        <div class="auth-section">
-          <div id="auth-status" class="auth-status read-only">
-            <i data-lucide="eye" class="auth-icon" style="width:14px; height:14px;"></i>
-            <span id="auth-text">Solo Lectura</span>
-          </div>
-          <button id="btn-auth-action" class="btn btn-auth">
-            <i data-lucide="log-in" style="width:14px; height:14px;"></i> Acceso Editor
-          </button>
-        </div>
-
-        <div class="theme-toggle-container">
-          <span class="theme-toggle-label">Modo Oscuro</span>
-          <label class="theme-switch" for="theme-checkbox">
-            <input type="checkbox" id="theme-checkbox">
-            <span class="slider"></span>
-          </label>
-        </div>
-        <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center;">
-          &copy; 2026 CommonPay
-        </div>
-      </div>
-    </aside>
-
-    <!-- OVERLAY PARA CERRAR EL SIDEBAR EN MÓVIL -->
-    <div class="sidebar-overlay" id="sidebar-overlay"></div>
-
-    <!-- BARRA DE NAVEGACIÓN SUPERIOR MÓVIL -->
-    <div class="mobile-topbar" id="mobile-topbar">
-      <button class="hamburger-btn" id="hamburger-btn" aria-label="Abrir menú">
-        <i data-lucide="menu"></i>
-      </button>
-      <div class="mobile-logo">
-        <div class="logo-icon" style="width:32px; height:32px; font-size:1.1rem;">C</div>
-        <span class="logo-text" style="font-size:1.1rem;">CommonPay</span>
-      </div>
-      <!-- selector de mes compacto para móvil -->
-      <div class="selector-mes-wrapper mobile-month-sel" id="mobile-month-selector-container">
-        <select id="selector-mes-global-mobile" class="selector-mes" style="font-size:0.85rem;">
-          <option value="0">Ene</option>
-          <option value="1">Feb</option>
-          <option value="2">Mar</option>
-          <option value="3">Abr</option>
-          <option value="4">May</option>
-          <option value="5">Jun</option>
-          <option value="6">Jul</option>
-          <option value="7">Ago</option>
-          <option value="8">Sep</option>
-          <option value="9">Oct</option>
-          <option value="10">Nov</option>
-          <option value="11">Dic</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- BARRA DE NAVEGACIÓN INFERIOR TIPO APP (MÓVIL) -->
-    <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
-      <a class="mobile-nav-item active" data-target="dashboard-view" id="mob-nav-dashboard">
-        <i data-lucide="layout-dashboard"></i><span>Inicio</span>
-      </a>
-      <a class="mobile-nav-item" data-target="fianza-view" id="mob-nav-fianza">
-        <i data-lucide="piggy-bank"></i><span>Fianza</span>
-      </a>
-      <a class="mobile-nav-item" data-target="stats-view" id="mob-nav-stats">
-        <i data-lucide="trending-up"></i><span>Stats</span>
-      </a>
-      <a class="mobile-nav-item" data-target="historial-view" id="mob-nav-historial">
-        <i data-lucide="history"></i><span>Historial</span>
-      </a>
-    </nav>
-
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="main-content">
-      
-      <!-- BANNER DE CABECERA (SE MANTIENE PARA LA MAYORÍA DE VISTAS) -->
-      <header class="header-banner">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('sw.js')
+            .then((reg) => console.log('Service Worker registrado con éxito:', reg.scope))
+            .catch((err) => console.error('Error al registrar el Service Worker:', err));
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <div class="app-container">
+      <!-- BARRA LATERAL DE NAVEGACIÓN -->
+      <aside class="sidebar" id="sidebar">
+        <!-- BOTÓN CERRAR EN MÓVIL -->
+        <button class="sidebar-close-btn" id="sidebar-close-btn" aria-label="Cerrar menú">
+          <i data-lucide="x"></i>
+        </button>
         <div>
-          <h2 class="welcome-title" id="page-title">Mes Actual</h2>
-          <p class="welcome-subtitle" id="page-subtitle">Calcula las transferencias mensuales y gestiona los gastos comunes.</p>
+          <div class="logo-container">
+            <div class="logo-icon">C</div>
+            <h1 class="logo-text">CommonPay</h1>
+          </div>
+
+          <nav>
+            <ul class="nav-links">
+              <li class="nav-item">
+                <a class="nav-link active" data-target="dashboard-view" id="nav-dashboard">
+                  <i data-lucide="layout-dashboard"></i> Dashboard
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" data-target="prevision-view" id="nav-prevision">
+                  <i data-lucide="calendar-range"></i> Previsión Anual
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" data-target="fianza-view" id="nav-fianza">
+                  <i data-lucide="piggy-bank"></i> Fondo Fianza
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" data-target="stats-view" id="nav-stats">
+                  <i data-lucide="trending-up"></i> Estadísticas
+                </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" data-target="historial-view" id="nav-historial">
+                  <i data-lucide="history"></i> Historial
+                </a>
+              </li>
+              <li class="nav-item editor-only-nav" style="display: none">
+                <a class="nav-link" data-target="conciliacion-view" id="nav-conciliacion">
+                  <i data-lucide="scale"></i> Liquidación (15)
+                </a>
+              </li>
+              <li class="nav-item editor-only-nav" style="display: none">
+                <a class="nav-link" data-target="config-view" id="nav-config">
+                  <i data-lucide="settings"></i> Ajustes
+                </a>
+              </li>
+            </ul>
+          </nav>
         </div>
-        
-        <!-- SELECTOR DE MES GLOBAL -->
-        <div class="selector-mes-wrapper" id="month-selector-container">
-          <i data-lucide="calendar" class="text-primary"></i>
-          <select id="selector-mes-global" class="selector-mes">
-            <option value="0">Enero</option>
-            <option value="1">Febrero</option>
-            <option value="2">Marzo</option>
-            <option value="3">Abril</option>
-            <option value="4">Mayo</option>
-            <option value="5">Junio</option>
-            <option value="6">Julio</option>
-            <option value="7">Agosto</option>
-            <option value="8">Septiembre</option>
-            <option value="9">Octubre</option>
-            <option value="10">Noviembre</option>
-            <option value="11">Diciembre</option>
+
+        <!-- FOOTER DE SIDEBAR CON TEMA Y USUARIOS -->
+        <div class="sidebar-footer">
+          <div class="auth-section">
+            <div id="auth-status" class="auth-status read-only">
+              <i data-lucide="eye" class="auth-icon" style="width: 14px; height: 14px"></i>
+              <span id="auth-text">Solo Lectura</span>
+            </div>
+            <button id="btn-auth-action" class="btn btn-auth">
+              <i data-lucide="log-in" style="width: 14px; height: 14px"></i> Acceso Editor
+            </button>
+          </div>
+
+          <div class="theme-toggle-container">
+            <span class="theme-toggle-label">Modo Oscuro</span>
+            <label class="theme-switch" for="theme-checkbox">
+              <input type="checkbox" id="theme-checkbox" />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div style="font-size: 0.75rem; color: var(--text-muted); text-align: center">
+            &copy; 2026 CommonPay
+          </div>
+        </div>
+      </aside>
+
+      <!-- OVERLAY PARA CERRAR EL SIDEBAR EN MÓVIL -->
+      <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+      <!-- BARRA DE NAVEGACIÓN SUPERIOR MÓVIL -->
+      <div class="mobile-topbar" id="mobile-topbar">
+        <button class="hamburger-btn" id="hamburger-btn" aria-label="Abrir menú">
+          <i data-lucide="menu"></i>
+        </button>
+        <div class="mobile-logo">
+          <div class="logo-icon" style="width: 32px; height: 32px; font-size: 1.1rem">C</div>
+          <span class="logo-text" style="font-size: 1.1rem">CommonPay</span>
+        </div>
+        <!-- selector de mes compacto para móvil -->
+        <div class="selector-mes-wrapper mobile-month-sel" id="mobile-month-selector-container">
+          <select id="selector-mes-global-mobile" class="selector-mes" style="font-size: 0.85rem">
+            <option value="0">Ene</option>
+            <option value="1">Feb</option>
+            <option value="2">Mar</option>
+            <option value="3">Abr</option>
+            <option value="4">May</option>
+            <option value="5">Jun</option>
+            <option value="6">Jul</option>
+            <option value="7">Ago</option>
+            <option value="8">Sep</option>
+            <option value="9">Oct</option>
+            <option value="10">Nov</option>
+            <option value="11">Dic</option>
           </select>
         </div>
-      </header>
+      </div>
 
-      <!-- SECCIÓN 1: DASHBOARD / MES ACTUAL -->
-      <section id="dashboard-view" class="view-section active">
-        
-        <!-- Contenedor de Alertas Dinámicas de Regularización -->
-        <div id="alertas-mes"></div>
-        
-        <!-- GRID DE TARJETAS DE PAREJA -->
-        <div class="dashboard-grid" id="pdf-printable-area">
-          
-          <!-- TARJETA DE OLGA -->
-          <article class="glass-card person-card olga">
-            <div class="person-header">
-              <div class="person-avatar olga-avatar">O</div>
-              <div class="person-name-wrapper">
-                <h3 class="person-name">Olga</h3>
-                <span class="person-role">Aportación de gastos</span>
-              </div>
-            </div>
-            
-            <div class="monto-transferencia olga-color" id="total-olga">
-              0,00 <span class="monto-currency">€</span>
-            </div>
-            
-            <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem;">Desglose de Conceptos</h4>
-            <div class="conceptos-list" id="conceptos-olga">
-              <!-- Cargado dinámicamente -->
-            </div>
-          </article>
+      <!-- BARRA DE NAVEGACIÓN INFERIOR TIPO APP (MÓVIL) -->
+      <nav class="mobile-bottom-nav" id="mobile-bottom-nav">
+        <a class="mobile-nav-item active" data-target="dashboard-view" id="mob-nav-dashboard">
+          <i data-lucide="layout-dashboard"></i><span>Inicio</span>
+        </a>
+        <a class="mobile-nav-item" data-target="fianza-view" id="mob-nav-fianza">
+          <i data-lucide="piggy-bank"></i><span>Fianza</span>
+        </a>
+        <a class="mobile-nav-item" data-target="stats-view" id="mob-nav-stats">
+          <i data-lucide="trending-up"></i><span>Stats</span>
+        </a>
+        <a class="mobile-nav-item" data-target="historial-view" id="mob-nav-historial">
+          <i data-lucide="history"></i><span>Historial</span>
+        </a>
+      </nav>
 
-          <!-- TARJETA DE PEDRO -->
-          <article class="glass-card person-card pedro">
-            <div class="person-header">
-              <div class="person-avatar pedro-avatar">P</div>
-              <div class="person-name-wrapper">
-                <h3 class="person-name">Pedro</h3>
-                <span class="person-role">Aportación de gastos</span>
-              </div>
-            </div>
-            
-            <div class="monto-transferencia pedro-color" id="total-pedro">
-              0,00 <span class="monto-currency">€</span>
-            </div>
-            
-            <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem;">Desglose de Conceptos</h4>
-            <div class="conceptos-list" id="conceptos-pedro">
-              <!-- Cargado dinámicamente -->
-            </div>
-          </article>
-
-        </div>
-
-        <!-- SECCIÓN DE ACCIÓN RÁPIDA (REGISTRO Y EXPORTAR) -->
-        <div class="glass-card flex-between" style="gap: 1.5rem; flex-wrap: wrap;">
+      <!-- CONTENIDO PRINCIPAL -->
+      <main class="main-content">
+        <!-- BANNER DE CABECERA (SE MANTIENE PARA LA MAYORÍA DE VISTAS) -->
+        <header class="header-banner">
           <div>
-            <h3 style="font-size: 1.15rem; margin-bottom: 0.25rem;">¿Gastos del mes transferidos?</h3>
-            <p style="font-size: 0.9rem; color: var(--text-muted);">
-              Al pulsar "Transferencia realizada", registrarás este mes en el historial e ingresarás 20€ al fondo común de fianza.
+            <h2 class="welcome-title" id="page-title">Mes Actual</h2>
+            <p class="welcome-subtitle" id="page-subtitle">
+              Calcula las transferencias mensuales y gestiona los gastos comunes.
             </p>
           </div>
-          <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-            <button class="btn btn-secondary" id="btn-exportar-pdf-mes">
-              <i data-lucide="file-text"></i> PDF
-            </button>
-            <button class="btn btn-primary" id="btn-completar-mes">
-              <i data-lucide="check-circle2"></i> Transferencia realizada
-            </button>
+
+          <!-- SELECTOR DE MES GLOBAL -->
+          <div class="selector-mes-wrapper" id="month-selector-container">
+            <i data-lucide="calendar" class="text-primary"></i>
+            <select id="selector-mes-global" class="selector-mes">
+              <option value="0">Enero</option>
+              <option value="1">Febrero</option>
+              <option value="2">Marzo</option>
+              <option value="3">Abril</option>
+              <option value="4">Mayo</option>
+              <option value="5">Junio</option>
+              <option value="6">Julio</option>
+              <option value="7">Agosto</option>
+              <option value="8">Septiembre</option>
+              <option value="9">Octubre</option>
+              <option value="10">Noviembre</option>
+              <option value="11">Diciembre</option>
+            </select>
           </div>
-        </div>
+        </header>
 
-      </section>
+        <!-- SECCIÓN 1: DASHBOARD / MES ACTUAL -->
+        <section id="dashboard-view" class="view-section active">
+          <!-- Contenedor de Alertas Dinámicas de Regularización -->
+          <div id="alertas-mes"></div>
 
-      <!-- SECCIÓN 2: SEGUIMIENTO DE LA FIANZA -->
-      <section id="fianza-view" class="view-section">
-        
-        <div class="fianza-container">
-          
-          <!-- TARJETA DE PROGRESO DE FIANZA -->
-          <div class="glass-card">
-            <h3 style="font-size: 1.35rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
-              <i data-lucide="shield-check" class="text-success"></i> Estado de la Fianza
+          <!-- GRID DE TARJETAS DE PAREJA -->
+          <div class="dashboard-grid" id="pdf-printable-area">
+            <!-- TARJETA DE OLGA -->
+            <article class="glass-card person-card olga">
+              <div class="person-header">
+                <div class="person-avatar olga-avatar">O</div>
+                <div class="person-name-wrapper">
+                  <h3 class="person-name">Olga</h3>
+                  <span class="person-role">Aportación de gastos</span>
+                </div>
+              </div>
+
+              <div class="monto-transferencia olga-color" id="total-olga">
+                0,00 <span class="monto-currency">€</span>
+              </div>
+
+              <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem">
+                Desglose de Conceptos
+              </h4>
+              <div class="conceptos-list" id="conceptos-olga">
+                <!-- Cargado dinámicamente -->
+              </div>
+            </article>
+
+            <!-- TARJETA DE PEDRO -->
+            <article class="glass-card person-card pedro">
+              <div class="person-header">
+                <div class="person-avatar pedro-avatar">P</div>
+                <div class="person-name-wrapper">
+                  <h3 class="person-name">Pedro</h3>
+                  <span class="person-role">Aportación de gastos</span>
+                </div>
+              </div>
+
+              <div class="monto-transferencia pedro-color" id="total-pedro">
+                0,00 <span class="monto-currency">€</span>
+              </div>
+
+              <h4 style="font-size: 0.95rem; font-weight: 600; margin-bottom: 0.5rem">
+                Desglose de Conceptos
+              </h4>
+              <div class="conceptos-list" id="conceptos-pedro">
+                <!-- Cargado dinámicamente -->
+              </div>
+            </article>
+          </div>
+
+          <!-- SECCIÓN DE ACCIÓN RÁPIDA (REGISTRO Y EXPORTAR) -->
+          <div class="glass-card flex-between" style="gap: 1.5rem; flex-wrap: wrap">
+            <div>
+              <h3 style="font-size: 1.15rem; margin-bottom: 0.25rem">
+                ¿Gastos del mes transferidos?
+              </h3>
+              <p style="font-size: 0.9rem; color: var(--text-muted)">
+                Al pulsar "Transferencia realizada", registrarás este mes en el historial e
+                ingresarás 20€ al fondo común de fianza.
+              </p>
+            </div>
+            <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap">
+              <button class="btn btn-secondary" id="btn-exportar-pdf-mes">
+                <i data-lucide="file-text"></i> PDF
+              </button>
+              <button class="btn btn-primary" id="btn-completar-mes">
+                <i data-lucide="check-circle2"></i> Transferencia realizada
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECCIÓN 2: SEGUIMIENTO DE LA FIANZA -->
+        <section id="fianza-view" class="view-section">
+          <div class="fianza-container">
+            <!-- TARJETA DE PROGRESO DE FIANZA -->
+            <div class="glass-card">
+              <h3
+                style="
+                  font-size: 1.35rem;
+                  margin-bottom: 1.5rem;
+                  display: flex;
+                  align-items: center;
+                  gap: 0.5rem;
+                "
+              >
+                <i data-lucide="shield-check" class="text-success"></i> Estado de la Fianza
+              </h3>
+
+              <div class="progress-header">
+                <span class="progress-label">Progreso acumulado</span>
+                <span class="progress-percentage" id="fianza-porcentaje">0%</span>
+              </div>
+
+              <div class="progress-bar-container">
+                <div class="progress-bar-fill" id="fianza-progress-bar"></div>
+              </div>
+
+              <div class="fianza-metrics">
+                <div class="metric-box">
+                  <div class="metric-title">Objetivo Total</div>
+                  <div class="metric-value text-primary" id="fianza-objetivo">450,00 €</div>
+                </div>
+                <div class="metric-box">
+                  <div class="metric-title">Acumulado Actual</div>
+                  <div class="metric-value text-success" id="fianza-acumulado">0,00 €</div>
+                </div>
+                <div class="metric-box">
+                  <div class="metric-title">Pendiente por Ahorrar</div>
+                  <div class="metric-value text-warning" id="fianza-pendiente">450,00 €</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- GESTIÓN RÁPIDA DE FIANZA -->
+            <div class="glass-card fianza-status-card">
+              <div class="fianza-status-icon" id="fianza-estado-icon">
+                <i data-lucide="piggy-bank"></i>
+              </div>
+              <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem" id="fianza-estado-titulo">
+                Ahorrando...
+              </h3>
+              <p class="fianza-status-text" id="fianza-estado-desc">
+                Cada mes que marcas como completado, Olga y Pedro aportan 10€ cada uno.
+              </p>
+
+              <!-- Posibilidad de hacer un movimiento manual al fondo (aportar/retirar) -->
+              <div
+                style="
+                  width: 100%;
+                  border-top: 1px solid var(--border-color);
+                  padding-top: 1.25rem;
+                  margin-top: 0.5rem;
+                "
+              >
+                <h4
+                  style="
+                    font-size: 0.85rem;
+                    font-weight: 600;
+                    margin-bottom: 0.75rem;
+                    text-align: left;
+                  "
+                >
+                  Movimiento Manual de Fianza
+                </h4>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%">
+                  <div class="input-wrapper" style="width: 100%">
+                    <input
+                      type="number"
+                      id="input-aportacion-extra"
+                      class="input-control"
+                      placeholder="10.00"
+                      min="0.01"
+                      step="0.01"
+                      style="height: 38px"
+                    />
+                    <span class="input-suffix">€</span>
+                  </div>
+                  <div style="display: flex; gap: 0.5rem; width: 100%">
+                    <button
+                      class="btn btn-primary"
+                      id="btn-aportar-manual"
+                      style="flex: 1; padding: 0; height: 38px"
+                    >
+                      Aportar
+                    </button>
+                    <button
+                      class="btn btn-danger"
+                      id="btn-retirar-manual"
+                      style="flex: 1; padding: 0; height: 38px; background: var(--red-gradient)"
+                    >
+                      Retirar
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- HISTORIAL DE MOVIMIENTOS DE FIANZA -->
+          <div class="glass-card" style="margin-top: 2rem">
+            <h3
+              style="
+                font-size: 1.35rem;
+                margin-bottom: 1.25rem;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+              "
+            >
+              <i data-lucide="history" class="text-primary"></i> Historial de Movimientos de Fianza
             </h3>
-            
-            <div class="progress-header">
-              <span class="progress-label">Progreso acumulado</span>
-              <span class="progress-percentage" id="fianza-porcentaje">0%</span>
+
+            <div class="table-wrapper">
+              <table id="tabla-fianza-historial" style="width: 100%; border-collapse: collapse">
+                <thead>
+                  <tr
+                    style="
+                      border-bottom: 2px solid var(--border-color);
+                      text-align: left;
+                      font-size: 0.9rem;
+                    "
+                  >
+                    <th style="padding: 0.75rem 0.5rem; font-weight: 600">Fecha y Hora</th>
+                    <th style="padding: 0.75rem 0.5rem; font-weight: 600">Concepto</th>
+                    <th style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 600">
+                      Importe
+                    </th>
+                    <th style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 600">
+                      Balance Fianza
+                    </th>
+                    <th
+                      style="
+                        padding: 0.75rem 0.5rem;
+                        text-align: center;
+                        width: 60px;
+                        font-weight: 600;
+                      "
+                    >
+                      Acción
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-fianza-historial-body">
+                  <!-- Cargado dinámicamente -->
+                </tbody>
+              </table>
             </div>
-            
-            <div class="progress-bar-container">
-              <div class="progress-bar-fill" id="fianza-progress-bar"></div>
+          </div>
+        </section>
+
+        <!-- SECCIÓN 3: ESTADÍSTICAS Y GRÁFICAS -->
+        <section id="stats-view" class="view-section">
+          <div class="stats-grid">
+            <!-- CONTENEDOR GRÁFICO ANUAL -->
+            <div class="glass-card">
+              <h3 style="font-size: 1.35rem; margin-bottom: 1.5rem">
+                Evolución Anual de Gastos (Previsión por Mes)
+              </h3>
+              <div class="chart-container">
+                <canvas id="graficoGastosAnual"></canvas>
+              </div>
             </div>
-            
-            <div class="fianza-metrics">
-              <div class="metric-box">
-                <div class="metric-title">Objetivo Total</div>
-                <div class="metric-value text-primary" id="fianza-objetivo">450,00 €</div>
+
+            <!-- ESTADÍSTICAS Y RESUMEN ANUAL -->
+            <div class="glass-card stats-summary-card">
+              <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem">Resumen de Previsiones</h3>
+
+              <!-- Fila Gasto Anual Olga -->
+              <div class="stat-row">
+                <div
+                  class="stat-icon"
+                  style="background-color: var(--primary-light); color: var(--primary)"
+                >
+                  <i data-lucide="user"></i>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-label">Total Olga (Año Completo)</div>
+                  <div class="stat-value" id="stats-total-olga">0,00 €</div>
+                </div>
               </div>
-              <div class="metric-box">
-                <div class="metric-title">Acumulado Actual</div>
-                <div class="metric-value text-success" id="fianza-acumulado">0,00 €</div>
+
+              <!-- Fila Gasto Anual Pedro -->
+              <div class="stat-row">
+                <div
+                  class="stat-icon"
+                  style="background-color: var(--secondary-light); color: #3b82f6"
+                >
+                  <i data-lucide="user"></i>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-label">Total Pedro (Año Completo)</div>
+                  <div class="stat-value" id="stats-total-pedro">0,00 €</div>
+                </div>
               </div>
-              <div class="metric-box">
-                <div class="metric-title">Pendiente por Ahorrar</div>
-                <div class="metric-value text-warning" id="fianza-pendiente">450,00 €</div>
+
+              <!-- Fila Gastos Extraordinarios -->
+              <div class="stat-row">
+                <div
+                  class="stat-icon"
+                  style="background-color: var(--warning-light); color: var(--warning)"
+                >
+                  <i data-lucide="alert-circle"></i>
+                </div>
+                <div class="stat-info">
+                  <div class="stat-label">Total Gastos Extraordinarios (IBI + Seguro)</div>
+                  <div class="stat-value" id="stats-total-extra">0,00 €</div>
+                </div>
               </div>
             </div>
           </div>
+        </section>
 
-          <!-- GESTIÓN RÁPIDA DE FIANZA -->
-          <div class="glass-card fianza-status-card">
-            <div class="fianza-status-icon" id="fianza-estado-icon">
-              <i data-lucide="piggy-bank"></i>
+        <!-- SECCIÓN 4: HISTORIAL DE MESES COMPLETADOS -->
+        <section id="historial-view" class="view-section">
+          <div class="glass-card">
+            <div class="table-header-container">
+              <div>
+                <h3 style="font-size: 1.35rem; margin-bottom: 0.25rem">
+                  Historial de Meses Completados
+                </h3>
+                <p style="font-size: 0.9rem; color: var(--text-muted)">
+                  Registro histórico de transferencias bancarias realizadas y fianza acumulada.
+                </p>
+              </div>
+              <button
+                class="btn btn-secondary"
+                id="btn-exportar-excel"
+                style="background: var(--accent-gradient)"
+              >
+                <i data-lucide="sheet"></i> Exportar a Excel
+              </button>
             </div>
-            <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem;" id="fianza-estado-titulo">Ahorrando...</h3>
-            <p class="fianza-status-text" id="fianza-estado-desc">
-              Cada mes que marcas como completado, Olga y Pedro aportan 10€ cada uno.
-            </p>
-            
-            <!-- Posibilidad de hacer un movimiento manual al fondo (aportar/retirar) -->
-            <div style="width: 100%; border-top: 1px solid var(--border-color); padding-top: 1.25rem; margin-top: 0.5rem;">
-              <h4 style="font-size: 0.85rem; font-weight: 600; margin-bottom: 0.75rem; text-align: left;">Movimiento Manual de Fianza</h4>
-              <div style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%;">
-                <div class="input-wrapper" style="width: 100%;">
-                  <input type="number" id="input-aportacion-extra" class="input-control" placeholder="10.00" min="0.01" step="0.01" style="height: 38px;">
+
+            <div class="table-wrapper">
+              <table id="tabla-historial">
+                <thead>
+                  <tr>
+                    <th>Mes / Año</th>
+                    <th>Transferencia Olga</th>
+                    <th>Transferencia Pedro</th>
+                    <th>Fecha de Registro</th>
+                    <th>Fianza al Momento</th>
+                    <th>Estado</th>
+                    <th style="width: 100px; text-align: center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-historial-body">
+                  <!-- Cargado dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECCIÓN 5: CONFIGURACIÓN / AJUSTES EDITABLES -->
+        <section id="config-view" class="view-section">
+          <div class="config-grid">
+            <!-- AJUSTES GASTOS COMUNES -->
+            <div class="glass-card">
+              <h3 class="form-group-title"><i data-lucide="home"></i> Gastos Comunes y Fijos</h3>
+
+              <div class="form-row">
+                <label class="form-label" for="cfg-hipoteca-cuota">Cuota de Hipoteca</label>
+                <div class="input-wrapper">
+                  <input
+                    type="number"
+                    id="cfg-hipoteca-cuota"
+                    class="input-control"
+                    step="0.01"
+                    min="0"
+                  />
                   <span class="input-suffix">€</span>
                 </div>
-                <div style="display: flex; gap: 0.5rem; width: 100%;">
-                  <button class="btn btn-primary" id="btn-aportar-manual" style="flex: 1; padding: 0; height: 38px;">
-                    Aportar
-                  </button>
-                  <button class="btn btn-danger" id="btn-retirar-manual" style="flex: 1; padding: 0; height: 38px; background: var(--red-gradient);">
-                    Retirar
-                  </button>
+              </div>
+
+              <div class="form-row">
+                <label class="form-label" for="cfg-hipoteca-alquiler"
+                  >Ingreso por Alquiler (Resta)</label
+                >
+                <div class="input-wrapper">
+                  <input
+                    type="number"
+                    id="cfg-hipoteca-alquiler"
+                    class="input-control"
+                    step="0.01"
+                    min="0"
+                  />
+                  <span class="input-suffix">€</span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label class="form-label" for="cfg-comunidad">Comunidad de Propietarios</label>
+                <div class="input-wrapper">
+                  <input
+                    type="number"
+                    id="cfg-comunidad"
+                    class="input-control"
+                    step="0.01"
+                    min="0"
+                  />
+                  <span class="input-suffix">€</span>
+                </div>
+              </div>
+
+              <h3 class="form-group-title" style="margin-top: 2rem">
+                <i data-lucide="piggy-bank"></i> Ahorro de Fianza
+              </h3>
+
+              <div class="form-row">
+                <label class="form-label" for="cfg-fianza-objetivo">Objetivo del Fondo</label>
+                <div class="input-wrapper">
+                  <input
+                    type="number"
+                    id="cfg-fianza-objetivo"
+                    class="input-control"
+                    step="0.01"
+                    min="0"
+                  />
+                  <span class="input-suffix">€</span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label class="form-label" for="cfg-fianza-mensual"
+                  >Aportación Mensual Olga/Pedro (c/u)</label
+                >
+                <div class="input-wrapper">
+                  <input
+                    type="number"
+                    id="cfg-fianza-mensual"
+                    class="input-control"
+                    step="0.01"
+                    min="0"
+                  />
+                  <span class="input-suffix">€</span>
+                </div>
+              </div>
+
+              <h3 class="form-group-title" style="margin-top: 2rem">
+                <i data-lucide="bell-ring"></i> Regularizaciones y Alertas
+              </h3>
+
+              <div class="form-row">
+                <label class="form-label" for="cfg-alerta-hipoteca"
+                  >Revisión de Hipoteca Variable</label
+                >
+                <div class="input-wrapper">
+                  <select
+                    id="cfg-alerta-hipoteca"
+                    class="input-control"
+                    style="text-align: left; padding-right: 0.5rem; text-align-last: right"
+                  >
+                    <option value="0">Enero</option>
+                    <option value="1">Febrero</option>
+                    <option value="2">Marzo</option>
+                    <option value="3">Abril</option>
+                    <option value="4">Mayo</option>
+                    <option value="5">Junio</option>
+                    <option value="6">Julio</option>
+                    <option value="7">Agosto</option>
+                    <option value="8">Septiembre</option>
+                    <option value="9">Octubre</option>
+                    <option value="10">Noviembre</option>
+                    <option value="11">Diciembre</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label class="form-label" for="cfg-alerta-manutencion"
+                  >Actualización Manutención (IPC)</label
+                >
+                <div class="input-wrapper">
+                  <select
+                    id="cfg-alerta-manutencion"
+                    class="input-control"
+                    style="text-align: left; padding-right: 0.5rem; text-align-last: right"
+                  >
+                    <option value="0">Enero</option>
+                    <option value="1">Febrero</option>
+                    <option value="2">Marzo</option>
+                    <option value="3">Abril</option>
+                    <option value="4">Mayo</option>
+                    <option value="5">Junio</option>
+                    <option value="6">Julio</option>
+                    <option value="7">Agosto</option>
+                    <option value="8">Septiembre</option>
+                    <option value="9">Octubre</option>
+                    <option value="10">Noviembre</option>
+                    <option value="11">Diciembre</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label class="form-label" for="cfg-alerta-alquiler"
+                  >Actualización Alquiler IRAV</label
+                >
+                <div class="input-wrapper">
+                  <select
+                    id="cfg-alerta-alquiler"
+                    class="input-control"
+                    style="text-align: left; padding-right: 0.5rem; text-align-last: right"
+                  >
+                    <option value="0">Enero</option>
+                    <option value="1">Febrero</option>
+                    <option value="2">Marzo</option>
+                    <option value="3">Abril</option>
+                    <option value="4">Mayo</option>
+                    <option value="5">Junio</option>
+                    <option value="6">Julio</option>
+                    <option value="7">Agosto</option>
+                    <option value="8">Septiembre</option>
+                    <option value="9">Octubre</option>
+                    <option value="10">Noviembre</option>
+                    <option value="11">Diciembre</option>
+                  </select>
+                </div>
+              </div>
+
+              <div
+                class="form-row"
+                style="
+                  margin-top: 1rem;
+                  border-top: 1px dashed var(--border-color);
+                  padding-top: 1rem;
+                "
+              >
+                <label class="form-label" for="cfg-hipoteca-nueva"
+                  >Cuota Hipoteca Variable Nueva</label
+                >
+                <div class="input-wrapper">
+                  <input
+                    type="number"
+                    id="cfg-hipoteca-nueva"
+                    class="input-control"
+                    step="0.01"
+                    min="0"
+                  />
+                  <span class="input-suffix">€</span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label class="form-label" for="cfg-ipc-tasa">Incremento IPC Manutención</label>
+                <div class="input-wrapper">
+                  <input
+                    type="number"
+                    id="cfg-ipc-tasa"
+                    class="input-control"
+                    step="0.1"
+                    min="0"
+                    placeholder="2.0"
+                  />
+                  <span class="input-suffix">%</span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label class="form-label" for="cfg-irav-tasa">Incremento IRAV Alquiler Casa</label>
+                <div class="input-wrapper">
+                  <input
+                    type="number"
+                    id="cfg-irav-tasa"
+                    class="input-control"
+                    step="0.1"
+                    min="0"
+                    placeholder="2.0"
+                  />
+                  <span class="input-suffix">%</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- AJUSTES GASTOS PERSONALES Y EXTRAORDINARIOS -->
+            <div class="glass-card">
+              <h3 class="form-group-title"><i data-lucide="user"></i> Gastos Personales (Olga)</h3>
+
+              <div class="form-row">
+                <label class="form-label" for="cfg-olga-coche">Cuota de Coche</label>
+                <div class="input-wrapper">
+                  <input
+                    type="number"
+                    id="cfg-olga-coche"
+                    class="input-control"
+                    step="0.01"
+                    min="0"
+                  />
+                  <span class="input-suffix">€</span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <label class="form-label" for="cfg-olga-manutencion">Gasto de Manutención</label>
+                <div class="input-wrapper">
+                  <input
+                    type="number"
+                    id="cfg-olga-manutencion"
+                    class="input-control"
+                    step="0.01"
+                    min="0"
+                  />
+                  <span class="input-suffix">€</span>
+                </div>
+              </div>
+
+              <h3 class="form-group-title" style="margin-top: 2rem">
+                <i data-lucide="calendar"></i> Gastos Extraordinarios Anuales
+              </h3>
+
+              <div class="form-row">
+                <div>
+                  <label class="form-label" style="display: block; font-weight: 600"
+                    >Impuesto IBI (Ene, Feb, Mar)</label
+                  >
+                  <span style="font-size: 0.75rem; color: var(--text-muted)"
+                    >Repartido automáticamente en 3 meses</span
+                  >
+                </div>
+                <div class="input-wrapper">
+                  <input
+                    type="number"
+                    id="cfg-extra-ibi"
+                    class="input-control"
+                    step="0.01"
+                    min="0"
+                  />
+                  <span class="input-suffix">€</span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div>
+                  <label class="form-label" style="display: block; font-weight: 600"
+                    >Seguro Hogar (Abril)</label
+                  >
+                  <span style="font-size: 0.75rem; color: var(--text-muted)"
+                    >Cargado únicamente en Abril</span
+                  >
+                </div>
+                <div class="input-wrapper">
+                  <input
+                    type="number"
+                    id="cfg-extra-seguro"
+                    class="input-control"
+                    step="0.01"
+                    min="0"
+                  />
+                  <span class="input-suffix">€</span>
                 </div>
               </div>
             </div>
           </div>
 
-        </div>
-
-        <!-- HISTORIAL DE MOVIMIENTOS DE FIANZA -->
-        <div class="glass-card" style="margin-top: 2rem;">
-          <h3 style="font-size: 1.35rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
-            <i data-lucide="history" class="text-primary"></i> Historial de Movimientos de Fianza
-          </h3>
-          
-          <div class="table-wrapper">
-            <table id="tabla-fianza-historial" style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 2px solid var(--border-color); text-align: left; font-size: 0.9rem;">
-                  <th style="padding: 0.75rem 0.5rem; font-weight: 600;">Fecha y Hora</th>
-                  <th style="padding: 0.75rem 0.5rem; font-weight: 600;">Concepto</th>
-                  <th style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 600;">Importe</th>
-                  <th style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 600;">Balance Fianza</th>
-                  <th style="padding: 0.75rem 0.5rem; text-align: center; width: 60px; font-weight: 600;">Acción</th>
-                </tr>
-              </thead>
-              <tbody id="tabla-fianza-historial-body">
-                <!-- Cargado dinámicamente -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </section>
-
-      <!-- SECCIÓN 3: ESTADÍSTICAS Y GRÁFICAS -->
-      <section id="stats-view" class="view-section">
-        
-        <div class="stats-grid">
-          
-          <!-- CONTENEDOR GRÁFICO ANUAL -->
-          <div class="glass-card">
-            <h3 style="font-size: 1.35rem; margin-bottom: 1.5rem;">Evolución Anual de Gastos (Previsión por Mes)</h3>
-            <div class="chart-container">
-              <canvas id="graficoGastosAnual"></canvas>
-            </div>
-          </div>
-
-          <!-- ESTADÍSTICAS Y RESUMEN ANUAL -->
-          <div class="glass-card stats-summary-card">
-            <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem;">Resumen de Previsiones</h3>
-            
-            <!-- Fila Gasto Anual Olga -->
-            <div class="stat-row">
-              <div class="stat-icon" style="background-color: var(--primary-light); color: var(--primary);">
-                <i data-lucide="user"></i>
-              </div>
-              <div class="stat-info">
-                <div class="stat-label">Total Olga (Año Completo)</div>
-                <div class="stat-value" id="stats-total-olga">0,00 €</div>
-              </div>
-            </div>
-
-            <!-- Fila Gasto Anual Pedro -->
-            <div class="stat-row">
-              <div class="stat-icon" style="background-color: var(--secondary-light); color: #3b82f6;">
-                <i data-lucide="user"></i>
-              </div>
-              <div class="stat-info">
-                <div class="stat-label">Total Pedro (Año Completo)</div>
-                <div class="stat-value" id="stats-total-pedro">0,00 €</div>
-              </div>
-            </div>
-
-            <!-- Fila Gastos Extraordinarios -->
-            <div class="stat-row">
-              <div class="stat-icon" style="background-color: var(--warning-light); color: var(--warning);">
-                <i data-lucide="alert-circle"></i>
-              </div>
-              <div class="stat-info">
-                <div class="stat-label">Total Gastos Extraordinarios (IBI + Seguro)</div>
-                <div class="stat-value" id="stats-total-extra">0,00 €</div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-      </section>
-
-      <!-- SECCIÓN 4: HISTORIAL DE MESES COMPLETADOS -->
-      <section id="historial-view" class="view-section">
-        
-        <div class="glass-card">
-          <div class="table-header-container">
-            <div>
-              <h3 style="font-size: 1.35rem; margin-bottom: 0.25rem;">Historial de Meses Completados</h3>
-              <p style="font-size: 0.9rem; color: var(--text-muted);">Registro histórico de transferencias bancarias realizadas y fianza acumulada.</p>
-            </div>
-            <button class="btn btn-secondary" id="btn-exportar-excel" style="background: var(--accent-gradient);">
-              <i data-lucide="sheet"></i> Exportar a Excel
-            </button>
-          </div>
-          
-          <div class="table-wrapper">
-            <table id="tabla-historial">
-              <thead>
-                <tr>
-                  <th>Mes / Año</th>
-                  <th>Transferencia Olga</th>
-                  <th>Transferencia Pedro</th>
-                  <th>Fecha de Registro</th>
-                  <th>Fianza al Momento</th>
-                  <th>Estado</th>
-                  <th style="width: 100px; text-align: center;">Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="tabla-historial-body">
-                <!-- Cargado dinámicamente -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </section>
-
-      <!-- SECCIÓN 5: CONFIGURACIÓN / AJUSTES EDITABLES -->
-      <section id="config-view" class="view-section">
-        
-        <div class="config-grid">
-          
-          <!-- AJUSTES GASTOS COMUNES -->
-          <div class="glass-card">
-            <h3 class="form-group-title"><i data-lucide="home"></i> Gastos Comunes y Fijos</h3>
-            
-            <div class="form-row">
-              <label class="form-label" for="cfg-hipoteca-cuota">Cuota de Hipoteca</label>
-              <div class="input-wrapper">
-                <input type="number" id="cfg-hipoteca-cuota" class="input-control" step="0.01" min="0">
-                <span class="input-suffix">€</span>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label class="form-label" for="cfg-hipoteca-alquiler">Ingreso por Alquiler (Resta)</label>
-              <div class="input-wrapper">
-                <input type="number" id="cfg-hipoteca-alquiler" class="input-control" step="0.01" min="0">
-                <span class="input-suffix">€</span>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label class="form-label" for="cfg-comunidad">Comunidad de Propietarios</label>
-              <div class="input-wrapper">
-                <input type="number" id="cfg-comunidad" class="input-control" step="0.01" min="0">
-                <span class="input-suffix">€</span>
-              </div>
-            </div>
-            
-            <h3 class="form-group-title" style="margin-top: 2rem;"><i data-lucide="piggy-bank"></i> Ahorro de Fianza</h3>
-            
-            <div class="form-row">
-              <label class="form-label" for="cfg-fianza-objetivo">Objetivo del Fondo</label>
-              <div class="input-wrapper">
-                <input type="number" id="cfg-fianza-objetivo" class="input-control" step="0.01" min="0">
-                <span class="input-suffix">€</span>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label class="form-label" for="cfg-fianza-mensual">Aportación Mensual Olga/Pedro (c/u)</label>
-              <div class="input-wrapper">
-                <input type="number" id="cfg-fianza-mensual" class="input-control" step="0.01" min="0">
-                <span class="input-suffix">€</span>
-              </div>
-            </div>
-            
-            <h3 class="form-group-title" style="margin-top: 2rem;"><i data-lucide="bell-ring"></i> Regularizaciones y Alertas</h3>
-            
-            <div class="form-row">
-              <label class="form-label" for="cfg-alerta-hipoteca">Revisión de Hipoteca Variable</label>
-              <div class="input-wrapper">
-                <select id="cfg-alerta-hipoteca" class="input-control" style="text-align: left; padding-right: 0.5rem; text-align-last: right;">
-                  <option value="0">Enero</option>
-                  <option value="1">Febrero</option>
-                  <option value="2">Marzo</option>
-                  <option value="3">Abril</option>
-                  <option value="4">Mayo</option>
-                  <option value="5">Junio</option>
-                  <option value="6">Julio</option>
-                  <option value="7">Agosto</option>
-                  <option value="8">Septiembre</option>
-                  <option value="9">Octubre</option>
-                  <option value="10">Noviembre</option>
-                  <option value="11">Diciembre</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label class="form-label" for="cfg-alerta-manutencion">Actualización Manutención (IPC)</label>
-              <div class="input-wrapper">
-                <select id="cfg-alerta-manutencion" class="input-control" style="text-align: left; padding-right: 0.5rem; text-align-last: right;">
-                  <option value="0">Enero</option>
-                  <option value="1">Febrero</option>
-                  <option value="2">Marzo</option>
-                  <option value="3">Abril</option>
-                  <option value="4">Mayo</option>
-                  <option value="5">Junio</option>
-                  <option value="6">Julio</option>
-                  <option value="7">Agosto</option>
-                  <option value="8">Septiembre</option>
-                  <option value="9">Octubre</option>
-                  <option value="10">Noviembre</option>
-                  <option value="11">Diciembre</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label class="form-label" for="cfg-alerta-alquiler">Actualización Alquiler IRAV</label>
-              <div class="input-wrapper">
-                <select id="cfg-alerta-alquiler" class="input-control" style="text-align: left; padding-right: 0.5rem; text-align-last: right;">
-                  <option value="0">Enero</option>
-                  <option value="1">Febrero</option>
-                  <option value="2">Marzo</option>
-                  <option value="3">Abril</option>
-                  <option value="4">Mayo</option>
-                  <option value="5">Junio</option>
-                  <option value="6">Julio</option>
-                  <option value="7">Agosto</option>
-                  <option value="8">Septiembre</option>
-                  <option value="9">Octubre</option>
-                  <option value="10">Noviembre</option>
-                  <option value="11">Diciembre</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row" style="margin-top: 1rem; border-top: 1px dashed var(--border-color); padding-top: 1rem;">
-              <label class="form-label" for="cfg-hipoteca-nueva">Cuota Hipoteca Variable Nueva</label>
-              <div class="input-wrapper">
-                <input type="number" id="cfg-hipoteca-nueva" class="input-control" step="0.01" min="0">
-                <span class="input-suffix">€</span>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label class="form-label" for="cfg-ipc-tasa">Incremento IPC Manutención</label>
-              <div class="input-wrapper">
-                <input type="number" id="cfg-ipc-tasa" class="input-control" step="0.1" min="0" placeholder="2.0">
-                <span class="input-suffix">%</span>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label class="form-label" for="cfg-irav-tasa">Incremento IRAV Alquiler Casa</label>
-              <div class="input-wrapper">
-                <input type="number" id="cfg-irav-tasa" class="input-control" step="0.1" min="0" placeholder="2.0">
-                <span class="input-suffix">%</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- AJUSTES GASTOS PERSONALES Y EXTRAORDINARIOS -->
-          <div class="glass-card">
-            <h3 class="form-group-title"><i data-lucide="user"></i> Gastos Personales (Olga)</h3>
-            
-            <div class="form-row">
-              <label class="form-label" for="cfg-olga-coche">Cuota de Coche</label>
-              <div class="input-wrapper">
-                <input type="number" id="cfg-olga-coche" class="input-control" step="0.01" min="0">
-                <span class="input-suffix">€</span>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label class="form-label" for="cfg-olga-manutencion">Gasto de Manutención</label>
-              <div class="input-wrapper">
-                <input type="number" id="cfg-olga-manutencion" class="input-control" step="0.01" min="0">
-                <span class="input-suffix">€</span>
-              </div>
-            </div>
-            
-            <h3 class="form-group-title" style="margin-top: 2rem;"><i data-lucide="calendar"></i> Gastos Extraordinarios Anuales</h3>
-            
-            <div class="form-row">
-              <div>
-                <label class="form-label" style="display:block; font-weight:600;">Impuesto IBI (Ene, Feb, Mar)</label>
-                <span style="font-size:0.75rem; color:var(--text-muted);">Repartido automáticamente en 3 meses</span>
-              </div>
-              <div class="input-wrapper">
-                <input type="number" id="cfg-extra-ibi" class="input-control" step="0.01" min="0">
-                <span class="input-suffix">€</span>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div>
-                <label class="form-label" style="display:block; font-weight:600;">Seguro Hogar (Abril)</label>
-                <span style="font-size:0.75rem; color:var(--text-muted);">Cargado únicamente en Abril</span>
-              </div>
-              <div class="input-wrapper">
-                <input type="number" id="cfg-extra-seguro" class="input-control" step="0.01" min="0">
-                <span class="input-suffix">€</span>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- TARJETA GOOGLE CALENDAR / iCAL -->
-        <div class="glass-card gcal-card" style="margin-top: 0;">
-          <h3 class="form-group-title"><i data-lucide="calendar-range"></i> Sincronización Google Calendar / iCal</h3>
-          <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6;">
-            Exporta los días señalados del año a tu calendario. Incluye el ingreso de Olga (día 5), el cobro de hipoteca (día 10), el ingreso de alquiler (día 15) y los meses de revisión de cuotas configurados.
-          </p>
-          <div class="gcal-buttons">
-            <button class="btn btn-primary" id="btn-exportar-ical">
-              <i data-lucide="download"></i> Descargar Calendario (.ics)
-            </button>
-            <button class="btn btn-gcal" id="btn-gcal-olga">
-              <i data-lucide="calendar-plus"></i> Ingreso Olga (día 5)
-            </button>
-            <button class="btn btn-gcal" id="btn-gcal-hipoteca">
-              <i data-lucide="calendar-plus"></i> Hipoteca (día 10)
-            </button>
-            <button class="btn btn-gcal" id="btn-gcal-alquiler">
-              <i data-lucide="calendar-plus"></i> Alquiler (día 15)
-            </button>
-          </div>
-        </div>
-
-        <!-- ACCIONES DE CONFIGURACIÓN -->
-        <div class="glass-card config-actions">
-          <button class="btn btn-secondary" id="btn-config-reset">
-            <i data-lucide="rotate-ccw"></i> Valores por defecto
-          </button>
-          <button class="btn btn-primary" id="btn-config-guardar">
-            <i data-lucide="save"></i> Guardar Ajustes
-          </button>
-        </div>
-
-      </section>
-
-      <!-- SECCIÓN 6: LIQUIDACIÓN / CONCILIACIÓN DEL DÍA 15 -->
-      <section id="conciliacion-view" class="view-section">
-        <div class="fianza-container conciliacion-grid">
-          
-          <!-- TARJETA FIANZA TEÓRICA -->
-          <div class="glass-card">
-            <h3 class="form-group-title" style="margin-bottom: 0.75rem;"><i data-lucide="piggy-bank" style="color: var(--text-muted);"></i> Ahorro Fianza Comprometido</h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5;">
-              Este es el saldo teórico acumulado del fondo de fianza en el sistema para el mes seleccionado. La cuenta común el día 15 debe salvaguardar exactamente este importe de ahorro común.
+          <!-- TARJETA GOOGLE CALENDAR / iCAL -->
+          <div class="glass-card gcal-card" style="margin-top: 0">
+            <h3 class="form-group-title">
+              <i data-lucide="calendar-range"></i> Sincronización Google Calendar / iCal
+            </h3>
+            <p
+              style="
+                font-size: 0.875rem;
+                color: var(--text-muted);
+                margin-bottom: 1.5rem;
+                line-height: 1.6;
+              "
+            >
+              Exporta los días señalados del año a tu calendario. Incluye el ingreso de Olga (día
+              5), el cobro de hipoteca (día 10), el ingreso de alquiler (día 15) y los meses de
+              revisión de cuotas configurados.
             </p>
-            
-            <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
-              <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 0.75rem;">
-                <span style="color: var(--text-muted); font-weight: 500;">Mes Seleccionado:</span>
-                <strong id="con-mes-nombre" style="color: var(--text-main); font-size: 1rem;">-</strong>
-              </div>
-              <div style="display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 0.75rem;">
-                <span style="color: var(--text-muted); font-weight: 500;">Fondo Acumulado:</span>
-                <strong id="con-fianza-esperada" style="color: var(--success); font-size: 1.25rem; font-family: 'Outfit', sans-serif;">0,00 €</strong>
-              </div>
+            <div class="gcal-buttons">
+              <button class="btn btn-primary" id="btn-exportar-ical">
+                <i data-lucide="download"></i> Descargar Calendario (.ics)
+              </button>
+              <button class="btn btn-gcal" id="btn-gcal-olga">
+                <i data-lucide="calendar-plus"></i> Ingreso Olga (día 5)
+              </button>
+              <button class="btn btn-gcal" id="btn-gcal-hipoteca">
+                <i data-lucide="calendar-plus"></i> Hipoteca (día 10)
+              </button>
+              <button class="btn btn-gcal" id="btn-gcal-alquiler">
+                <i data-lucide="calendar-plus"></i> Alquiler (día 15)
+              </button>
             </div>
           </div>
 
-          <!-- ENTRADA SALDO REAL -->
-          <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between;">
-            <div>
-              <h3 class="form-group-title" style="margin-bottom: 0.75rem;"><i data-lucide="wallet" style="color: var(--text-muted);"></i> Balance Real del Banco</h3>
-              <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5;">
-                Introduce el saldo total reflejado en la cuenta común al final del día 15 de este mes para liquidar.
+          <!-- ACCIONES DE CONFIGURACIÓN -->
+          <div class="glass-card config-actions">
+            <button class="btn btn-secondary" id="btn-config-reset">
+              <i data-lucide="rotate-ccw"></i> Valores por defecto
+            </button>
+            <button class="btn btn-primary" id="btn-config-guardar">
+              <i data-lucide="save"></i> Guardar Ajustes
+            </button>
+          </div>
+        </section>
+
+        <!-- SECCIÓN 6: LIQUIDACIÓN / CONCILIACIÓN DEL DÍA 15 -->
+        <section id="conciliacion-view" class="view-section">
+          <div class="fianza-container conciliacion-grid">
+            <!-- TARJETA FIANZA TEÓRICA -->
+            <div class="glass-card">
+              <h3 class="form-group-title" style="margin-bottom: 0.75rem">
+                <i data-lucide="piggy-bank" style="color: var(--text-muted)"></i> Ahorro Fianza
+                Comprometido
+              </h3>
+              <p
+                style="
+                  font-size: 0.85rem;
+                  color: var(--text-muted);
+                  margin-bottom: 1.5rem;
+                  line-height: 1.5;
+                "
+              >
+                Este es el saldo teórico acumulado del fondo de fianza en el sistema para el mes
+                seleccionado. La cuenta común el día 15 debe salvaguardar exactamente este importe
+                de ahorro común.
               </p>
-              
-              <div class="form-row" style="margin-bottom: 1.5rem;">
-                <label class="form-label" for="con-saldo-real" style="font-weight:600; display: block; margin-bottom: 0.5rem;">Saldo en Cuenta Común (el día 15)</label>
-                <div class="input-wrapper" style="width: 100%;">
-                  <input type="number" id="con-saldo-real" class="input-control editor-only-control" step="0.01" min="0" placeholder="0.00" style="width: 100%; font-size: 1.1rem; padding: 0.75rem;">
-                  <span class="input-suffix" style="padding: 0.75rem 1rem;">€</span>
+
+              <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem">
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    border-bottom: 1px dashed var(--border-color);
+                    padding-bottom: 0.75rem;
+                  "
+                >
+                  <span style="color: var(--text-muted); font-weight: 500">Mes Seleccionado:</span>
+                  <strong id="con-mes-nombre" style="color: var(--text-main); font-size: 1rem"
+                    >-</strong
+                  >
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    border-bottom: 1px dashed var(--border-color);
+                    padding-bottom: 0.75rem;
+                  "
+                >
+                  <span style="color: var(--text-muted); font-weight: 500">Fondo Acumulado:</span>
+                  <strong
+                    id="con-fianza-esperada"
+                    style="
+                      color: var(--success);
+                      font-size: 1.25rem;
+                      font-family: 'Outfit', sans-serif;
+                    "
+                    >0,00 €</strong
+                  >
                 </div>
               </div>
             </div>
 
-            <button class="btn btn-primary editor-only-control" id="btn-calcular-balance" style="width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;">
-              <i data-lucide="scale"></i> Calcular Balance de Liquidación
+            <!-- ENTRADA SALDO REAL -->
+            <div
+              class="glass-card"
+              style="display: flex; flex-direction: column; justify-content: space-between"
+            >
+              <div>
+                <h3 class="form-group-title" style="margin-bottom: 0.75rem">
+                  <i data-lucide="wallet" style="color: var(--text-muted)"></i> Balance Real del
+                  Banco
+                </h3>
+                <p
+                  style="
+                    font-size: 0.85rem;
+                    color: var(--text-muted);
+                    margin-bottom: 1.5rem;
+                    line-height: 1.5;
+                  "
+                >
+                  Introduce el saldo total reflejado en la cuenta común al final del día 15 de este
+                  mes para liquidar.
+                </p>
+
+                <div class="form-row" style="margin-bottom: 1.5rem">
+                  <label
+                    class="form-label"
+                    for="con-saldo-real"
+                    style="font-weight: 600; display: block; margin-bottom: 0.5rem"
+                    >Saldo en Cuenta Común (el día 15)</label
+                  >
+                  <div class="input-wrapper" style="width: 100%">
+                    <input
+                      type="number"
+                      id="con-saldo-real"
+                      class="input-control editor-only-control"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      style="width: 100%; font-size: 1.1rem; padding: 0.75rem"
+                    />
+                    <span class="input-suffix" style="padding: 0.75rem 1rem">€</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                class="btn btn-primary editor-only-control"
+                id="btn-calcular-balance"
+                style="
+                  width: 100%;
+                  display: inline-flex;
+                  align-items: center;
+                  justify-content: center;
+                  gap: 8px;
+                "
+              >
+                <i data-lucide="scale"></i> Calcular Balance de Liquidación
+              </button>
+            </div>
+          </div>
+
+          <!-- PANEL DE RESULTADOS DE LIQUIDACIÓN -->
+          <div
+            id="resultado-conciliacion"
+            class="glass-card"
+            style="
+              display: none;
+              margin-bottom: 2.5rem;
+              animation: fadeIn 0.3s ease-out;
+              padding: 1.75rem;
+            "
+          >
+            <!-- Aquí se inyectará el balance calculado -->
+          </div>
+
+          <!-- TABLA HISTORIAL DE CONCILIACIONES -->
+          <div class="glass-card">
+            <h3 class="form-group-title" style="margin-bottom: 1.25rem">
+              <i data-lucide="history" style="color: var(--text-muted)"></i> Historial de
+              Liquidaciones (Día 15)
+            </h3>
+
+            <div class="table-wrapper">
+              <table
+                class="table"
+                id="tabla-conciliaciones"
+                style="width: 100%; border-collapse: collapse"
+              >
+                <thead>
+                  <tr
+                    style="
+                      border-bottom: 2px solid var(--border-color);
+                      text-align: left;
+                      font-size: 0.9rem;
+                    "
+                  >
+                    <th style="padding: 0.75rem 0.5rem; font-weight: 600">Periodo</th>
+                    <th style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 600">
+                      Saldo Real
+                    </th>
+                    <th style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 600">
+                      Fianza
+                    </th>
+                    <th style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 600">
+                      Resultado
+                    </th>
+                    <th style="padding: 0.75rem 0.5rem; font-weight: 600">Fecha Registro</th>
+                    <th style="padding: 0.75rem 0.5rem; font-weight: 600">Estado</th>
+                    <th
+                      style="
+                        padding: 0.75rem 0.5rem;
+                        text-align: center;
+                        width: 60px;
+                        font-weight: 600;
+                      "
+                    >
+                      Acción
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-conciliaciones-body">
+                  <!-- Se inyectan con js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- SECCIÓN 6: PREVISIÓN ANUAL -->
+        <section id="prevision-view" class="view-section">
+          <!-- CONTROLES DE SELECCIÓN -->
+          <div class="prevision-controls glass-card">
+            <div class="prevision-controls-left">
+              <i data-lucide="calendar-range" class="prevision-icon-header"></i>
+              <div>
+                <h3 style="font-size: 1.1rem; margin-bottom: 0.1rem">
+                  Previsión de Pagos <span id="prevision-anio">2026</span>
+                </h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted)">
+                  Desglose mensual completo de transferencias previstas
+                </p>
+              </div>
+            </div>
+            <div class="prevision-controls-right">
+              <label class="prevision-select-label" for="prevision-persona-select"
+                >Ver previsión de:</label
+              >
+              <div class="prevision-select-wrapper">
+                <i data-lucide="user" style="width: 16px; height: 16px"></i>
+                <select id="prevision-persona-select" class="prevision-select">
+                  <option value="olga">Olga</option>
+                  <option value="pedro">Pedro</option>
+                </select>
+                <i data-lucide="chevron-down" style="width: 14px; height: 14px; opacity: 0.5"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- RESUMEN ANUAL TOP -->
+          <div class="prevision-summary-grid" id="prevision-summary-grid">
+            <!-- Inyectado por JS -->
+          </div>
+
+          <!-- TABLA MENSUAL -->
+          <div class="glass-card" style="padding: 0; overflow: hidden">
+            <div class="prevision-table-header">
+              <h3 id="prevision-table-title" style="font-size: 1.1rem">
+                Calendario de Aportaciones — Olga
+              </h3>
+              <span id="prevision-total-badge" class="prevision-total-badge"></span>
+            </div>
+            <div class="table-wrapper" style="border: none; border-radius: 0">
+              <table id="prevision-tabla" style="min-width: 680px">
+                <thead>
+                  <tr>
+                    <th>Mes</th>
+                    <th style="text-align: right">Hipoteca (50%)</th>
+                    <th style="text-align: right">Comunidad (50%)</th>
+                    <th style="text-align: right">Fianza</th>
+                    <th id="prevision-th-coche" style="text-align: right">Coche</th>
+                    <th id="prevision-th-manutencion" style="text-align: right">Manutención</th>
+                    <th style="text-align: right">Extraordinarios</th>
+                    <th style="text-align: right; color: var(--primary)">Total</th>
+                  </tr>
+                </thead>
+                <tbody id="prevision-tabla-body">
+                  <!-- Inyectado por JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- NOTA INFORMATIVA -->
+          <div class="prevision-nota glass-card">
+            <i
+              data-lucide="info"
+              style="width: 18px; height: 18px; color: var(--primary); flex-shrink: 0"
+            ></i>
+            <p
+              id="prevision-nota-texto"
+              style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.6"
+            ></p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- MODAL DE INICIO DE SESIÓN (ACCESO EDITOR) -->
+    <div id="login-modal" class="modal-overlay" style="display: none">
+      <div class="glass-card modal-content">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            <i data-lucide="lock" style="width: 18px; height: 18px; color: var(--text-primary)"></i>
+            Acceso Editor
+          </h3>
+          <button class="btn-close" id="btn-close-login" type="button">&times;</button>
+        </div>
+        <form id="login-form">
+          <div class="form-row" style="margin-bottom: 1.25rem">
+            <label
+              class="form-label"
+              for="login-email"
+              style="display: block; margin-bottom: 0.5rem; font-weight: 500"
+              >Correo Electrónico</label
+            >
+            <input
+              type="email"
+              id="login-email"
+              class="input-control"
+              placeholder="pedro@ejemplo.com"
+              style="width: 100%"
+              required
+            />
+          </div>
+          <div class="form-row" style="margin-bottom: 1.25rem">
+            <label
+              class="form-label"
+              for="login-password"
+              style="display: block; margin-bottom: 0.5rem; font-weight: 500"
+              >Contraseña</label
+            >
+            <input
+              type="password"
+              id="login-password"
+              class="input-control"
+              placeholder="••••••••"
+              style="width: 100%"
+              required
+            />
+          </div>
+          <div
+            id="login-error"
+            class="login-error-msg"
+            style="
+              display: none;
+              color: #ef4444;
+              background-color: rgba(239, 68, 68, 0.1);
+              padding: 0.75rem;
+              border-radius: 6px;
+              font-size: 0.85rem;
+              margin-bottom: 1.25rem;
+              align-items: center;
+              gap: 8px;
+            "
+          >
+            <i data-lucide="alert-circle" style="width: 16px; height: 16px"></i>
+            <span id="login-error-text">Credenciales incorrectas.</span>
+          </div>
+          <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px">
+            <button type="button" class="btn btn-secondary" id="btn-cancel-login">Cancelar</button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              id="btn-submit-login"
+              style="display: inline-flex; align-items: center; gap: 6px"
+            >
+              <i data-lucide="unlock" style="width: 14px; height: 14px"></i> Entrar
             </button>
           </div>
-
-        </div>
-
-        <!-- PANEL DE RESULTADOS DE LIQUIDACIÓN -->
-        <div id="resultado-conciliacion" class="glass-card" style="display: none; margin-bottom: 2.5rem; animation: fadeIn 0.3s ease-out; padding: 1.75rem;">
-          <!-- Aquí se inyectará el balance calculado -->
-        </div>
-
-        <!-- TABLA HISTORIAL DE CONCILIACIONES -->
-        <div class="glass-card">
-          <h3 class="form-group-title" style="margin-bottom: 1.25rem;"><i data-lucide="history" style="color: var(--text-muted);"></i> Historial de Liquidaciones (Día 15)</h3>
-          
-          <div class="table-wrapper">
-            <table class="table" id="tabla-conciliaciones" style="width: 100%; border-collapse: collapse;">
-              <thead>
-                <tr style="border-bottom: 2px solid var(--border-color); text-align: left; font-size: 0.9rem;">
-                  <th style="padding: 0.75rem 0.5rem; font-weight: 600;">Periodo</th>
-                  <th style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 600;">Saldo Real</th>
-                  <th style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 600;">Fianza</th>
-                  <th style="padding: 0.75rem 0.5rem; text-align: right; font-weight: 600;">Resultado</th>
-                  <th style="padding: 0.75rem 0.5rem; font-weight: 600;">Fecha Registro</th>
-                  <th style="padding: 0.75rem 0.5rem; font-weight: 600;">Estado</th>
-                  <th style="padding: 0.75rem 0.5rem; text-align: center; width: 60px; font-weight: 600;">Acción</th>
-                </tr>
-              </thead>
-              <tbody id="tabla-conciliaciones-body">
-                <!-- Se inyectan con js -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </section>
-
-      <!-- SECCIÓN 6: PREVISIÓN ANUAL -->
-      <section id="prevision-view" class="view-section">
-
-        <!-- CONTROLES DE SELECCIÓN -->
-        <div class="prevision-controls glass-card">
-          <div class="prevision-controls-left">
-            <i data-lucide="calendar-range" class="prevision-icon-header"></i>
-            <div>
-              <h3 style="font-size: 1.1rem; margin-bottom: 0.1rem;">Previsión de Pagos <span id="prevision-anio">2026</span></h3>
-              <p style="font-size: 0.85rem; color: var(--text-muted);">Desglose mensual completo de transferencias previstas</p>
-            </div>
-          </div>
-          <div class="prevision-controls-right">
-            <label class="prevision-select-label" for="prevision-persona-select">Ver previsión de:</label>
-            <div class="prevision-select-wrapper">
-              <i data-lucide="user" style="width:16px;height:16px;"></i>
-              <select id="prevision-persona-select" class="prevision-select">
-                <option value="olga">Olga</option>
-                <option value="pedro">Pedro</option>
-              </select>
-              <i data-lucide="chevron-down" style="width:14px;height:14px;opacity:0.5;"></i>
-            </div>
-          </div>
-        </div>
-
-        <!-- RESUMEN ANUAL TOP -->
-        <div class="prevision-summary-grid" id="prevision-summary-grid">
-          <!-- Inyectado por JS -->
-        </div>
-
-        <!-- TABLA MENSUAL -->
-        <div class="glass-card" style="padding: 0; overflow: hidden;">
-          <div class="prevision-table-header">
-            <h3 id="prevision-table-title" style="font-size: 1.1rem;">Calendario de Aportaciones — Olga</h3>
-            <span id="prevision-total-badge" class="prevision-total-badge"></span>
-          </div>
-          <div class="table-wrapper" style="border: none; border-radius: 0;">
-            <table id="prevision-tabla" style="min-width: 680px;">
-              <thead>
-                <tr>
-                  <th>Mes</th>
-                  <th style="text-align:right;">Hipoteca (50%)</th>
-                  <th style="text-align:right;">Comunidad (50%)</th>
-                  <th style="text-align:right;">Fianza</th>
-                  <th id="prevision-th-coche" style="text-align:right;">Coche</th>
-                  <th id="prevision-th-manutencion" style="text-align:right;">Manutención</th>
-                  <th style="text-align:right;">Extraordinarios</th>
-                  <th style="text-align:right; color: var(--primary);">Total</th>
-                </tr>
-              </thead>
-              <tbody id="prevision-tabla-body">
-                <!-- Inyectado por JS -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- NOTA INFORMATIVA -->
-        <div class="prevision-nota glass-card">
-          <i data-lucide="info" style="width:18px;height:18px;color:var(--primary);flex-shrink:0;"></i>
-          <p id="prevision-nota-texto" style="font-size:0.88rem;color:var(--text-muted);line-height:1.6;"></p>
-        </div>
-
-      </section>
-
-    </main>
-
-  </div>
-
-  <!-- MODAL DE INICIO DE SESIÓN (ACCESO EDITOR) -->
-  <div id="login-modal" class="modal-overlay" style="display: none;">
-    <div class="glass-card modal-content">
-      <div class="modal-header">
-        <h3 class="modal-title"><i data-lucide="lock" style="width: 18px; height: 18px; color: var(--text-primary);"></i> Acceso Editor</h3>
-        <button class="btn-close" id="btn-close-login" type="button">&times;</button>
+        </form>
       </div>
-      <form id="login-form">
-        <div class="form-row" style="margin-bottom: 1.25rem;">
-          <label class="form-label" for="login-email" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Correo Electrónico</label>
-          <input type="email" id="login-email" class="input-control" placeholder="pedro@ejemplo.com" style="width: 100%;" required>
-        </div>
-        <div class="form-row" style="margin-bottom: 1.25rem;">
-          <label class="form-label" for="login-password" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Contraseña</label>
-          <input type="password" id="login-password" class="input-control" placeholder="••••••••" style="width: 100%;" required>
-        </div>
-        <div id="login-error" class="login-error-msg" style="display: none; color: #ef4444; background-color: rgba(239, 68, 68, 0.1); padding: 0.75rem; border-radius: 6px; font-size: 0.85rem; margin-bottom: 1.25rem; align-items: center; gap: 8px;">
-          <i data-lucide="alert-circle" style="width: 16px; height: 16px;"></i>
-          <span id="login-error-text">Credenciales incorrectas.</span>
-        </div>
-        <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px;">
-          <button type="button" class="btn btn-secondary" id="btn-cancel-login">Cancelar</button>
-          <button type="submit" class="btn btn-primary" id="btn-submit-login" style="display: inline-flex; align-items: center; gap: 6px;">
-            <i data-lucide="unlock" style="width: 14px; height: 14px;"></i> Entrar
-          </button>
-        </div>
-      </form>
     </div>
-  </div>
 
-  <!-- Contenedor estático oculto para la generación de reportes PDF del mes -->
+    <!-- Contenedor estático oculto para la generación de reportes PDF del mes -->
 
-  <!-- Inyección de módulos JavaScript -->
-  <script src="js/storage.js"></script>
-  <script src="js/calculations.js"></script>
-  <script src="js/app.js"></script>
-</body>
+    <!-- Inyección de módulos JavaScript -->
+    <script src="js/storage.js"></script>
+    <script src="js/calculations.js"></script>
+    <script src="js/app.js"></script>
+  </body>
 </html>

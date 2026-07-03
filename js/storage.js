@@ -12,13 +12,13 @@ const THEME_KEY = 'commonpay_theme';
 const DEFAULT_CONFIG = {
   gastosFijos: {
     cuotaHipoteca: 716.81,
-    ingresoAlquiler: 462.00,
+    ingresoAlquiler: 462.0,
     comunidad: 39.38
   },
   gastosPersonales: {
     olga: {
       coche: 188.02,
-      manutencion: 189.30
+      manutencion: 189.3
     },
     pedro: {}
   },
@@ -32,22 +32,22 @@ const DEFAULT_CONFIG = {
     {
       id: 'seguro_hogar',
       nombre: 'Seguro Hogar',
-      importeTotal: 108.20,
+      importeTotal: 108.2,
       meses: [3] // Abril
     }
   ],
   fianza: {
     pointer: 'fianza',
-    objetivo: 450.00,
-    aportacionMensualPersona: 10.00
+    objetivo: 450.0,
+    aportacionMensualPersona: 10.0
   },
   alertas: {
-    mesHipoteca: 8,              // Septiembre
-    mesManutencion: 5,           // Junio
-    mesAlquiler: 10,             // Noviembre
-    tasaManutencion: 2.0,        // 2% IPC
-    tasaAlquiler: 2.0,           // 2% IRAV
-    cuotaHipotecaNueva: 716.81   // Sin variación por defecto
+    mesHipoteca: 8, // Septiembre
+    mesManutencion: 5, // Junio
+    mesAlquiler: 10, // Noviembre
+    tasaManutencion: 2.0, // 2% IPC
+    tasaAlquiler: 2.0, // 2% IRAV
+    cuotaHipotecaNueva: 716.81 // Sin variación por defecto
   }
 };
 
@@ -65,21 +65,21 @@ async function inicializarSupabase() {
       throw new Error(`Error HTTP: ${response.status}`);
     }
     const config = await response.json();
-    
+
     if (config.supabaseUrl && config.supabaseAnonKey) {
       // Validar si la API de Supabase se ha cargado en el navegador (CDN en index.html)
       if (typeof supabase !== 'undefined') {
         supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
         isSupabaseActive = true;
-        console.log("Supabase inicializado correctamente.");
+        console.log('Supabase inicializado correctamente.');
       } else {
-        console.warn("Librería de Supabase no cargada en el DOM. Usando LocalStorage.");
+        console.warn('Librería de Supabase no cargada en el DOM. Usando LocalStorage.');
       }
     } else {
-      console.log("No se detectó configuración de Supabase. Usando LocalStorage (Modo Local).");
+      console.log('No se detectó configuración de Supabase. Usando LocalStorage (Modo Local).');
     }
   } catch (error) {
-    console.error("Error al inicializar Supabase. Cayendo en LocalStorage:", error);
+    console.error('Error al inicializar Supabase. Cayendo en LocalStorage:', error);
     isSupabaseActive = false;
   }
 }
@@ -90,7 +90,10 @@ async function inicializarSupabase() {
 async function obtenerUsuarioActivo() {
   if (!isSupabaseActive) return null;
   try {
-    const { data: { user }, error } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+      error
+    } = await supabaseClient.auth.getUser();
     if (error) return null;
     return user;
   } catch (e) {
@@ -103,7 +106,7 @@ async function obtenerUsuarioActivo() {
  */
 async function login(email, password) {
   if (!isSupabaseActive) {
-    throw new Error("La base de datos en la nube no está configurada.");
+    throw new Error('La base de datos en la nube no está configurada.');
   }
   const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) throw error;
@@ -173,7 +176,7 @@ async function getConfiguration() {
         return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
       }
     } catch (err) {
-      console.error("Error al obtener configuración de Supabase. Leyendo LocalStorage:", err);
+      console.error('Error al obtener configuración de Supabase. Leyendo LocalStorage:', err);
     }
   }
 
@@ -198,9 +201,9 @@ async function saveConfiguration(config) {
     try {
       const user = await obtenerUsuarioActivo();
       if (!user) {
-        throw new Error("No tienes permisos de edición. Inicia sesión primero.");
+        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
       }
-      
+
       const { error } = await supabaseClient
         .from('configuracion')
         .upsert({ id: 1, data: config, updated_at: new Date().toISOString() });
@@ -208,7 +211,7 @@ async function saveConfiguration(config) {
       if (error) throw error;
       return;
     } catch (err) {
-      console.error("Error al guardar configuración en Supabase. Guardando en LocalStorage:", err);
+      console.error('Error al guardar configuración en Supabase. Guardando en LocalStorage:', err);
       throw err;
     }
   }
@@ -243,12 +246,12 @@ async function getFianzaAcumulado() {
       } else {
         const user = await obtenerUsuarioActivo();
         if (user) {
-          await saveFianzaAcumulado(0.00);
+          await saveFianzaAcumulado(0.0);
         }
-        return 0.00;
+        return 0.0;
       }
     } catch (err) {
-      console.error("Error al leer fianza de Supabase. Usando LocalStorage:", err);
+      console.error('Error al leer fianza de Supabase. Usando LocalStorage:', err);
     }
   }
 
@@ -256,10 +259,10 @@ async function getFianzaAcumulado() {
   const data = localStorage.getItem(FIANZA_ACUMULADO_KEY);
   if (data === null) {
     localStorage.setItem(FIANZA_ACUMULADO_KEY, '0');
-    return 0.00;
+    return 0.0;
   }
   const valor = parseFloat(data);
-  return isNaN(valor) ? 0.00 : valor;
+  return isNaN(valor) ? 0.0 : valor;
 }
 
 /**
@@ -272,9 +275,9 @@ async function saveFianzaAcumulado(valor) {
     try {
       const user = await obtenerUsuarioActivo();
       if (!user) {
-        throw new Error("No tienes permisos de edición. Inicia sesión primero.");
+        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
       }
-      
+
       const { error } = await supabaseClient
         .from('fianza_estado')
         .upsert({ id: 1, acumulado: valorRedondeado, updated_at: new Date().toISOString() });
@@ -282,7 +285,7 @@ async function saveFianzaAcumulado(valor) {
       if (error) throw error;
       return;
     } catch (err) {
-      console.error("Error al guardar fianza en Supabase:", err);
+      console.error('Error al guardar fianza en Supabase:', err);
       throw err;
     }
   }
@@ -305,7 +308,7 @@ async function getHistorial() {
       if (error) throw error;
       return (data || []).map(mapearAJs);
     } catch (err) {
-      console.error("Error al leer historial de Supabase. Usando LocalStorage:", err);
+      console.error('Error al leer historial de Supabase. Usando LocalStorage:', err);
     }
   }
 
@@ -335,9 +338,9 @@ function saveHistorialLocal(historial) {
 async function addTransferenciaAlHistorial(transferencia) {
   const historial = await getHistorial();
   const existe = historial.some(
-    t => t.mesIndex === transferencia.mesIndex && t.anio === transferencia.anio
+    (t) => t.mesIndex === transferencia.mesIndex && t.anio === transferencia.anio
   );
-  
+
   if (existe) {
     return false; // Ya registrado
   }
@@ -346,18 +349,16 @@ async function addTransferenciaAlHistorial(transferencia) {
     try {
       const user = await obtenerUsuarioActivo();
       if (!user) {
-        throw new Error("No tienes permisos de edición. Inicia sesión primero.");
+        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
       }
-      
+
       const dbRow = mapearADb(transferencia);
-      const { error } = await supabaseClient
-        .from('historial_transferencias')
-        .insert(dbRow);
+      const { error } = await supabaseClient.from('historial_transferencias').insert(dbRow);
 
       if (error) throw error;
       return true;
     } catch (err) {
-      console.error("Error al añadir transferencia en Supabase:", err);
+      console.error('Error al añadir transferencia en Supabase:', err);
       throw err;
     }
   }
@@ -376,9 +377,9 @@ async function deleteTransferenciaDelHistorial(mesIndex, anio) {
     try {
       const user = await obtenerUsuarioActivo();
       if (!user) {
-        throw new Error("No tienes permisos de edición. Inicia sesión primero.");
+        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
       }
-      
+
       const { error } = await supabaseClient
         .from('historial_transferencias')
         .delete()
@@ -388,14 +389,14 @@ async function deleteTransferenciaDelHistorial(mesIndex, anio) {
       if (error) throw error;
       return;
     } catch (err) {
-      console.error("Error al eliminar transferencia en Supabase:", err);
+      console.error('Error al eliminar transferencia en Supabase:', err);
       throw err;
     }
   }
 
   // Fallback LocalStorage
   let historial = await getHistorial();
-  historial = historial.filter(t => !(t.mesIndex === mesIndex && t.anio === anio));
+  historial = historial.filter((t) => !(t.mesIndex === mesIndex && t.anio === anio));
   saveHistorialLocal(historial);
 }
 
@@ -444,7 +445,7 @@ async function getConciliaciones() {
       if (error) throw error;
       return (data || []).map(mapearConciliacionAJs);
     } catch (err) {
-      console.error("Error al leer conciliaciones de Supabase. Usando LocalStorage:", err);
+      console.error('Error al leer conciliaciones de Supabase. Usando LocalStorage:', err);
     }
   }
 
@@ -467,7 +468,7 @@ async function getConciliaciones() {
 async function addConciliacion(conciliacion) {
   const lista = await getConciliaciones();
   const existe = lista.some(
-    c => c.mesIndex === conciliacion.mesIndex && c.anio === conciliacion.anio
+    (c) => c.mesIndex === conciliacion.mesIndex && c.anio === conciliacion.anio
   );
 
   if (existe) {
@@ -478,24 +479,24 @@ async function addConciliacion(conciliacion) {
     try {
       const user = await obtenerUsuarioActivo();
       if (!user) {
-        throw new Error("No tienes permisos de edición. Inicia sesión primero.");
+        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
       }
 
       const dbRow = mapearConciliacionADb(conciliacion);
-      const { error } = await supabaseClient
-        .from('conciliaciones')
-        .insert(dbRow);
+      const { error } = await supabaseClient.from('conciliaciones').insert(dbRow);
 
       if (error) throw error;
       return true;
     } catch (err) {
-      console.error("Error al añadir conciliación en Supabase:", err);
+      console.error('Error al añadir conciliación en Supabase:', err);
       throw err;
     }
   }
 
   // Fallback LocalStorage
-  conciliacion.id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9);
+  conciliacion.id = crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).substring(2, 9);
   conciliacion.fecha = conciliacion.fecha || new Date().toISOString();
   lista.push(conciliacion);
   localStorage.setItem(CONCILIACIONES_KEY, JSON.stringify(lista));
@@ -510,25 +511,22 @@ async function deleteConciliacion(id, mesIndex, anio) {
     try {
       const user = await obtenerUsuarioActivo();
       if (!user) {
-        throw new Error("No tienes permisos de edición. Inicia sesión primero.");
+        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
       }
 
-      const { error } = await supabaseClient
-        .from('conciliaciones')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabaseClient.from('conciliaciones').delete().eq('id', id);
 
       if (error) throw error;
       return;
     } catch (err) {
-      console.error("Error al eliminar conciliación en Supabase:", err);
+      console.error('Error al eliminar conciliación en Supabase:', err);
       throw err;
     }
   }
 
   // Fallback LocalStorage
   let lista = await getConciliaciones();
-  lista = lista.filter(c => !(c.mesIndex === mesIndex && c.anio === anio));
+  lista = lista.filter((c) => !(c.mesIndex === mesIndex && c.anio === anio));
   localStorage.setItem(CONCILIACIONES_KEY, JSON.stringify(lista));
 }
 
@@ -567,7 +565,7 @@ async function getFianzaHistorial() {
       if (error) throw error;
       return (data || []).map(mapearMovimientoFianzaAJs);
     } catch (err) {
-      console.error("Error al leer historial de fianza de Supabase. Usando LocalStorage:", err);
+      console.error('Error al leer historial de fianza de Supabase. Usando LocalStorage:', err);
     }
   }
 
@@ -600,18 +598,16 @@ async function addMovimientoFianza(concepto, importe, acumuladoDespues) {
     try {
       const user = await obtenerUsuarioActivo();
       if (!user) {
-        throw new Error("No tienes permisos de edición. Inicia sesión primero.");
+        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
       }
-      
+
       const dbRow = mapearMovimientoFianzaADb(nuevoMovimiento);
-      const { error } = await supabaseClient
-        .from('fianza_historial')
-        .insert(dbRow);
+      const { error } = await supabaseClient.from('fianza_historial').insert(dbRow);
 
       if (error) throw error;
       return nuevoMovimiento;
     } catch (err) {
-      console.error("Error al añadir movimiento de fianza en Supabase:", err);
+      console.error('Error al añadir movimiento de fianza en Supabase:', err);
       throw err;
     }
   }
@@ -631,25 +627,22 @@ async function deleteMovimientoFianza(id) {
     try {
       const user = await obtenerUsuarioActivo();
       if (!user) {
-        throw new Error("No tienes permisos de edición. Inicia sesión primero.");
+        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
       }
 
-      const { error } = await supabaseClient
-        .from('fianza_historial')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabaseClient.from('fianza_historial').delete().eq('id', id);
 
       if (error) throw error;
       return;
     } catch (err) {
-      console.error("Error al eliminar movimiento de fianza en Supabase:", err);
+      console.error('Error al eliminar movimiento de fianza en Supabase:', err);
       throw err;
     }
   }
 
   // Fallback LocalStorage
   let historial = await getFianzaHistorial();
-  historial = historial.filter(m => m.id !== id);
+  historial = historial.filter((m) => m.id !== id);
   localStorage.setItem(FIANZA_HISTORIAL_KEY, JSON.stringify(historial));
 }
 

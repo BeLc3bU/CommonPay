@@ -21,8 +21,8 @@ export default async function handler(req, res) {
     const response = await fetch(`${supabaseUrl}/rest/v1/configuracion?select=id&limit=1`, {
       method: 'GET',
       headers: {
-        'apikey': supabaseAnonKey,
-        'Authorization': `Bearer ${supabaseAnonKey}`,
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${supabaseAnonKey}`,
         'Content-Type': 'application/json'
       }
     });

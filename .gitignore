@@ -32,3 +32,10 @@ yarn-error.log*
 
 .vercel
 .env*
+
+# Node / Vite / Desarrollo
+node_modules/
+dist/
+.eslintcache
+.temp/
+.vitest/

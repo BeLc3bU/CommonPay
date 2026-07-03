@@ -8,17 +8,17 @@
   --bg-card-hover: rgba(255, 255, 255, 0.95);
   --border-card: rgba(255, 255, 255, 0.6);
   --shadow-card: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
-  
+
   --text-main: #1e293b;
   --text-muted: #64748b;
   --text-inverse: #ffffff;
-  
+
   --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
   --secondary-gradient: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   --accent-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
   --orange-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   --red-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-  
+
   --primary: #4f46e5;
   --primary-light: rgba(99, 102, 241, 0.15);
   --success: #10b981;
@@ -27,7 +27,7 @@
   --warning-light: rgba(245, 158, 11, 0.15);
   --danger: #ef4444;
   --danger-light: rgba(239, 68, 68, 0.15);
-  
+
   --bg-sidebar: #ffffff;
   --border-color: #e2e8f0;
   --input-bg: #f8fafc;
@@ -38,29 +38,29 @@
 }
 
 /* Tema Oscuro */
-[data-theme="dark"] {
+[data-theme='dark'] {
   --bg-app: #090d16;
   --bg-card: rgba(17, 24, 39, 0.6);
   --bg-card-hover: rgba(17, 24, 39, 0.85);
   --border-card: rgba(255, 255, 255, 0.05);
   --shadow-card: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
-  
+
   --text-main: #f1f5f9;
   --text-muted: #94a3b8;
   --text-inverse: #0f172a;
-  
+
   --primary-gradient: linear-gradient(135deg, #818cf8 0%, #6366f1 100%);
   --secondary-gradient: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
   --accent-gradient: linear-gradient(135deg, #34d399 0%, #10b981 100%);
   --orange-gradient: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-  
+
   --primary: #818cf8;
   --primary-light: rgba(129, 140, 248, 0.15);
   --success: #34d399;
   --success-light: rgba(52, 211, 153, 0.15);
   --warning: #fbbf24;
   --warning-light: rgba(251, 191, 36, 0.15);
-  
+
   --bg-sidebar: #0f172a;
   --border-color: #1e293b;
   --input-bg: #1e293b;
@@ -72,7 +72,10 @@
   padding: 0;
   box-sizing: border-box;
   font-family: 'Inter', sans-serif;
-  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease;
 }
 
 body {
@@ -83,7 +86,11 @@ body {
   overflow-x: hidden;
 }
 
-h1, h2, h3, h4, .font-title {
+h1,
+h2,
+h3,
+h4,
+.font-title {
   font-family: 'Outfit', sans-serif;
   font-weight: 700;
 }
@@ -167,7 +174,8 @@ h1, h2, h3, h4, .font-title {
   border: 1px solid transparent;
 }
 
-.nav-link:hover, .nav-link.active {
+.nav-link:hover,
+.nav-link.active {
   background-color: var(--primary-light);
   color: var(--primary);
 }
@@ -220,19 +228,19 @@ h1, h2, h3, h4, .font-title {
   right: 0;
   bottom: 0;
   background-color: #cbd5e1;
-  transition: .4s;
+  transition: 0.4s;
   border-radius: 24px;
 }
 
 .slider:before {
   position: absolute;
-  content: "";
+  content: '';
   height: 18px;
   width: 18px;
   left: 3px;
   bottom: 3px;
   background-color: white;
-  transition: .4s;
+  transition: 0.4s;
   border-radius: 50%;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
@@ -905,10 +913,18 @@ tr:hover td {
   }
 }
 
-.text-success { color: var(--success); }
-.text-warning { color: var(--warning); }
-.text-danger { color: var(--danger); }
-.text-primary { color: var(--primary); }
+.text-success {
+  color: var(--success);
+}
+.text-warning {
+  color: var(--warning);
+}
+.text-danger {
+  color: var(--danger);
+}
+.text-primary {
+  color: var(--primary);
+}
 
 .flex-between {
   display: flex;
@@ -986,9 +1002,9 @@ tr:hover td {
    MOBILE ≤ 768px — Layout principal
    ==================================================== */
 @media (max-width: 768px) {
-
   /* Evitar scroll horizontal */
-  html, body {
+  html,
+  body {
     overflow-x: hidden;
   }
 
@@ -1009,7 +1025,7 @@ tr:hover td {
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     padding: 1.5rem 1.25rem;
     border-right: 1px solid var(--border-color);
-    box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
     overflow-y: auto;
   }
 
@@ -1068,7 +1084,7 @@ tr:hover td {
     border-bottom: 1px solid var(--border-color);
     padding: 0 1rem;
     z-index: 150;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
   }
 
   .hamburger-btn {
@@ -1202,7 +1218,8 @@ tr:hover td {
     min-width: 560px;
   }
 
-  th, td {
+  th,
+  td {
     padding: 0.85rem 1rem;
     font-size: 0.875rem;
     white-space: nowrap;
@@ -1252,7 +1269,7 @@ tr:hover td {
     background: var(--bg-sidebar);
     border-top: 1px solid var(--border-color);
     z-index: 150;
-    box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
     /* safe-area iOS */
     padding-bottom: env(safe-area-inset-bottom);
     height: calc(58px + env(safe-area-inset-bottom));
@@ -1498,7 +1515,9 @@ tr:hover td {
   max-width: 400px;
   padding: 2rem;
   border-radius: var(--radius-lg);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.3),
+    0 10px 10px -5px rgba(0, 0, 0, 0.2);
   animation: scaleUp 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
   background: var(--bg-sidebar);
   border: 1px solid var(--border-color);
@@ -1549,13 +1568,23 @@ tr:hover td {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes scaleUp {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* --- CONCILIACIÓN Y LIQUIDACIÓN DÍA 15 (FASE 3) --- */
@@ -1772,13 +1801,13 @@ tr:hover td {
   box-shadow: none;
 }
 
-[data-theme="dark"] .btn-gcal {
+[data-theme='dark'] .btn-gcal {
   border-color: #7aaef8;
   background: rgba(66, 133, 244, 0.12);
   color: #7aaef8;
 }
 
-[data-theme="dark"] .btn-gcal:hover {
+[data-theme='dark'] .btn-gcal:hover {
   background: #4285f4;
   color: white;
 }
@@ -1833,7 +1862,9 @@ tr:hover td {
   border-radius: var(--radius-md);
   padding: 0.55rem 0.9rem;
   color: var(--text-muted);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
   cursor: pointer;
 }
 
@@ -2022,9 +2053,15 @@ tr:hover td {
 }
 
 /* --- Clases de utilidad de colores de texto --- */
-.text-primary { color: var(--primary) !important; }
-.text-success { color: var(--success) !important; }
-.text-warning { color: var(--warning) !important; }
-.text-danger { color: var(--danger) !important; }
-
-
+.text-primary {
+  color: var(--primary) !important;
+}
+.text-success {
+  color: var(--success) !important;
+}
+.text-warning {
+  color: var(--warning) !important;
+}
+.text-danger {
+  color: var(--danger) !important;
+}

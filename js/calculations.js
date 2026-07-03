@@ -33,9 +33,12 @@ function calcularDesgloseMes(mesIndex, config) {
   };
 
   // 1. Gastos Fijos (con regularizaciones dinámicas según el mes)
-  const cuotaHipotecaBase = (mesIndex >= parseInt(alertas.mesHipoteca))
-    ? (alertas.cuotaHipotecaNueva !== undefined ? alertas.cuotaHipotecaNueva : gastosFijos.cuotaHipoteca)
-    : gastosFijos.cuotaHipoteca;
+  const cuotaHipotecaBase =
+    mesIndex >= parseInt(alertas.mesHipoteca)
+      ? alertas.cuotaHipotecaNueva !== undefined
+        ? alertas.cuotaHipotecaNueva
+        : gastosFijos.cuotaHipoteca
+      : gastosFijos.cuotaHipoteca;
 
   let ingresoAlquilerBase = gastosFijos.ingresoAlquiler || 0;
   if (mesIndex >= parseInt(alertas.mesAlquiler)) {
@@ -59,11 +62,11 @@ function calcularDesgloseMes(mesIndex, config) {
   const extraordinariosPedro = [];
 
   if (Array.isArray(gastosExtraordinarios)) {
-    gastosExtraordinarios.forEach(ext => {
+    gastosExtraordinarios.forEach((ext) => {
       if (ext.meses.includes(mesIndex)) {
         const numMeses = ext.meses.length;
         const importeTotalCents = toCentavos(ext.importeTotal);
-        
+
         // Se reparte el importe extraordinario en los meses correspondientes y luego a la mitad por persona
         const importeMensualTotalCents = Math.round(importeTotalCents / numMeses);
         const cuotaIndividualCents = Math.round(importeMensualTotalCents / 2);
@@ -82,10 +85,11 @@ function calcularDesgloseMes(mesIndex, config) {
 
   // 4. Gastos Personales (con regularización por IPC para la manutención)
   const cocheOlgaCents = toCentavos(gastosPersonales.olga.coche);
-  
+
   let manutencionOlgaBase = gastosPersonales.olga.manutencion || 0;
   if (mesIndex >= parseInt(alertas.mesManutencion)) {
-    const tasaIPC = alertas.tasaManutencion !== undefined ? parseFloat(alertas.tasaManutencion) : 2.0;
+    const tasaIPC =
+      alertas.tasaManutencion !== undefined ? parseFloat(alertas.tasaManutencion) : 2.0;
     manutencionOlgaBase = manutencionOlgaBase * (1 + tasaIPC / 100);
   }
   const manutencionOlgaCents = toCentavos(manutencionOlgaBase);
@@ -100,7 +104,7 @@ function calcularDesgloseMes(mesIndex, config) {
   ];
 
   // Añadir extraordinarios de Olga
-  extraordinariosOlga.forEach(ext => {
+  extraordinariosOlga.forEach((ext) => {
     conceptosOlga.push({ nombre: ext.nombre, valor: ext.valor, tipo: 'extraordinario' });
   });
 
@@ -115,13 +119,13 @@ function calcularDesgloseMes(mesIndex, config) {
   ];
 
   // Añadir extraordinarios de Pedro
-  extraordinariosPedro.forEach(ext => {
+  extraordinariosPedro.forEach((ext) => {
     conceptosPedro.push({ nombre: ext.nombre, valor: ext.valor, tipo: 'extraordinario' });
   });
 
   // Agregar cualquier gasto personal de Pedro si existiera en la configuración
   const personalPedroKeys = Object.keys(gastosPersonales.pedro || {});
-  personalPedroKeys.forEach(key => {
+  personalPedroKeys.forEach((key) => {
     const valor = gastosPersonales.pedro[key] || 0;
     if (valor > 0) {
       conceptosPedro.push({
