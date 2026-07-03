@@ -11,7 +11,8 @@ Este documento actúa como el "cerebro" o la memoria a largo plazo para las inte
   - Creación de la estructura del Spec-Driven Development en `spec/` con su Constitución (`mission.md`, `tech-stack.md`, `roadmap.md`) y la feature base retrospectiva `000-commonpay-core`.
   - Estructuración de la memoria persistente y las habilidades de OpenCode.
   - Actualización de `README.md` (corrigiendo rutas de desarrollo e integrando la sección AI-First) y simplificación de `ROADMAP.md` para redirigir al roadmap oficial único en `spec/constitution/roadmap.md`.
-- **Estado Actual:** 100% de los tests pasando, linter configurado y estructura SDD lista.
+  - Optimización de carga inicial en `js/app.js` mediante hidratación síncrona/inmediata desde `LocalStorage` y descarga paralela en segundo plano (`Promise.all`) para Supabase, eliminando los "ceros" y esperas al iniciar. Subido a producción en GitHub/Vercel.
+- **Estado Actual:** 100% de los tests pasando, linter configurado, estructura SDD lista y velocidad de carga optimizada.
 
 ## Decisiones Técnicas Registradas
 - **Node.js en local:** Introducción de Node/npm únicamente como arnés de desarrollo y validación automática. El cliente en producción se despliega de forma limpia y estática en Vercel.
