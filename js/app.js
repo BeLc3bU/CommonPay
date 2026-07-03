@@ -113,39 +113,139 @@ document.addEventListener('DOMContentLoaded', () => {
   ];
 
   // --- INICIALIZACIÓN ---
+  function cargarDatosLocalesInmediatos() {
+    const DEFAULT_CONFIG = {
+      gastosFijos: {
+        cuotaHipoteca: 716.81,
+        ingresoAlquiler: 462.0,
+        comunidad: 39.38
+      },
+      gastosPersonales: {
+        olga: {
+          coche: 188.02,
+          manutencion: 189.3
+        },
+        pedro: {}
+      },
+      gastosExtraordinarios: [
+        {
+          id: 'ibi',
+          nombre: 'IBI',
+          importeTotal: 306.63,
+          meses: [0, 1, 2]
+        },
+        {
+          id: 'seguro_hogar',
+          nombre: 'Seguro Hogar',
+          importeTotal: 108.2,
+          meses: [3]
+        }
+      ],
+      fianza: {
+        pointer: 'fianza',
+        objetivo: 450.0,
+        aportacionMensualPersona: 10.0
+      },
+      alertas: {
+        mesHipoteca: 8,
+        mesManutencion: 5,
+        mesAlquiler: 10,
+        tasaManutencion: 2.0,
+        tasaAlquiler: 2.0,
+        cuotaHipotecaNueva: 716.81
+      }
+    };
+
+    try {
+      const cfg = localStorage.getItem('commonpay_config');
+      appConfig = cfg ? JSON.parse(cfg) : DEFAULT_CONFIG;
+    } catch (e) {
+      appConfig = DEFAULT_CONFIG;
+    }
+
+    try {
+      const fz = localStorage.getItem('commonpay_fianza_acumulado');
+      fianzaAcumulado = fz ? parseFloat(fz) : 0.0;
+    } catch (e) {
+      fianzaAcumulado = 0.0;
+    }
+
+    try {
+      const fzh = localStorage.getItem('commonpay_fianza_historial');
+      fianzaHistorial = fzh ? JSON.parse(fzh) : [];
+    } catch (e) {
+      fianzaHistorial = [];
+    }
+
+    try {
+      const hist = localStorage.getItem('commonpay_historial');
+      historialTransferencias = hist ? JSON.parse(hist) : [];
+    } catch (e) {
+      historialTransferencias = [];
+    }
+
+    try {
+      const conc = localStorage.getItem('commonpay_conciliaciones');
+      conciliaciones = conc ? JSON.parse(conc) : [];
+    } catch (e) {
+      conciliaciones = [];
+    }
+  }
+
   async function init() {
-    // 1. Inicializar Supabase si está disponible en Vercel
-    await window.StorageModule.inicializarSupabase();
+    // 1. Cargar e hidratar la interfaz de inmediato con datos locales (síncrono/inmediato)
+    cargarDatosLocalesInmediatos();
 
-    // 2. Verificar estado de autenticación de Pedro
-    const user = await window.StorageModule.obtenerUsuarioActivo();
-    isPedroEditor = user !== null;
-
-    // 3. Cargar datos desde la nube o LocalStorage (asíncrono)
-    appConfig = await window.StorageModule.getConfiguration();
-    fianzaAcumulado = await window.StorageModule.getFianzaAcumulado();
-    fianzaHistorial = await window.StorageModule.getFianzaHistorial();
-    historialTransferencias = await window.StorageModule.getHistorial();
-    conciliaciones = await window.StorageModule.getConciliaciones();
-
-    // 4. Establecer mes por defecto
+    // 2. Establecer mes por defecto
     selectorMesGlobal.value = currentMonthIndex;
     if (selectorMesGlobalMobile) selectorMesGlobalMobile.value = currentMonthIndex;
 
-    // 5. Inicializar tema visual
+    // 3. Inicializar tema visual
     const savedTheme = window.StorageModule.getTheme();
     document.documentElement.setAttribute('data-theme', savedTheme);
     themeCheckbox.checked = savedTheme === 'dark';
 
-    // 6. Registrar Eventos
+    // 4. Registrar Eventos
     setupEventListeners();
 
-    // 7. Renderizar interfaz inicial y aplicar seguridad visual
+    // 5. Renderizar de inmediato para evitar ceros en pantalla
     actualizarEstadoAuthVisual();
     actualizarInterfaz();
-
-    // Crear iconos
     lucide.createIcons();
+
+    // 6. Cargar datos desde la nube en segundo plano (asíncrono no bloqueante)
+    try {
+      // Inicializar conexión con Supabase
+      await window.StorageModule.inicializarSupabase();
+
+      // Verificar autenticación de Pedro
+      const user = await window.StorageModule.obtenerUsuarioActivo();
+      isPedroEditor = user !== null;
+      actualizarEstadoAuthVisual();
+
+      // Paralelizar la descarga de datos desde Supabase
+      const [config, fianza, historialFianza, historialTrans, conciliacionesList] =
+        await Promise.all([
+          window.StorageModule.getConfiguration(),
+          window.StorageModule.getFianzaAcumulado(),
+          window.StorageModule.getFianzaHistorial(),
+          window.StorageModule.getHistorial(),
+          window.StorageModule.getConciliaciones()
+        ]);
+
+      // Sobrescribir variables de estado con la información remota
+      appConfig = config;
+      fianzaAcumulado = fianza;
+      fianzaHistorial = historialFianza;
+      historialTransferencias = historialTrans;
+      conciliaciones = conciliacionesList;
+
+      // Refrescar suavemente la interfaz con los datos sincronizados
+      actualizarInterfaz();
+      lucide.createIcons();
+    } catch (err) {
+      console.warn('Sincronización con la nube fallida, operando en LocalStorage:', err);
+    }
   }
 
   // --- CONTROL DE PERMISOS DE EDICIÓN (ROLES) ---
