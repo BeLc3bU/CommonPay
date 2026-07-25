@@ -31,7 +31,7 @@ export default async function handler(req, res) {
       throw new Error(`Error en respuesta de Supabase: ${response.status} ${response.statusText}`);
     }
 
-    const data = await response.json();
+    await response.json();
     return res.status(200).json({
       status: 'success',
       message: 'Ping de mantenimiento ejecutado con éxito. Supabase se mantendrá activo.',
