@@ -1,6 +1,6 @@
-# 🤖 AGENTS.md - Arnés de Desarrollo de IA para CommonPay
+# 🤖 AGENTS.md - Arnés de Desarrollo de IA para CommonPay (GitHub Spec Kit)
 
-Este documento actúa como la guía técnica de referencia, system prompt persistente y marco normativo para cualquier agente inteligente que desarrolle, depure o mantenga el proyecto **CommonPay**.
+Este documento actúa como la guía técnica de referencia, system prompt persistente y marco normativo para cualquier agente inteligente que desarrolle, depure o mantenga el proyecto **CommonPay** bajo el estándar **GitHub Spec Kit** ([github/spec-kit](https://github.com/github/spec-kit)).
 
 ---
 
@@ -15,9 +15,9 @@ Posee persistencia híbrida en local (`LocalStorage`) y nube (`Supabase`), con c
 - **Lenguaje:** JavaScript estándar (ES6, Vanilla JS).
 - **Framework / Runtime:** Ninguno en el cliente (Vanilla JS plano). Node.js 20+ para entorno de desarrollo y funciones backend.
 - **Base de Datos:** Supabase (PostgreSQL) con políticas de Row Level Security (RLS).
-- **ORM / Cliente de DB:** `@supabase/supabase-js` (REST y suscripciones).
+- **ORM / Cliente de DB:** `@supabase/supabase-js` (REST y suscripciones vía CDN).
 - **Autenticación:** Supabase Auth (correo y contraseña).
-- **Testing:** Vitest para pruebas unitarias.
+- **Testing:** Vitest con entorno `jsdom` para pruebas unitarias.
 - **Build / Servidor local:** Vite (para desarrollo, tests y empaquetamiento).
 - **Lint / Formateador:** ESLint y Prettier.
 - **Despliegue:** Vercel (funciones Serverless Node.js).
@@ -38,23 +38,43 @@ Posee persistencia híbrida en local (`LocalStorage`) y nube (`Supabase`), con c
 ## 📂 Arquitectura del Proyecto
 ```
 CommonPay-main/
-├── .opencode/           # Arnés de agentes y configuraciones avanzadas
-│   ├── skills/          # Habilidades específicas del dominio
-│   └── commands/        # Comandos personalizados (/feature, /verify...)
+├── .specify/            # Arnés y configuración de GitHub Spec Kit
+│   ├── commands/        # Comandos del ciclo de vida (/speckit.*)
+│   │   ├── speckit.checklist.md
+│   │   ├── speckit.clarify.md
+│   │   ├── speckit.constitution.md
+│   │   ├── speckit.converge.md
+│   │   ├── speckit.implement.md
+│   │   ├── speckit.plan.md
+│   │   ├── speckit.specify.md
+│   │   └── speckit.tasks.md
+│   ├── memory/          # Constitución y decisiones de arquitectura (ADRs)
+│   │   ├── constitution.md
+│   │   └── decisions.md
+│   └── templates/       # Plantillas estándar de especificación
+│       ├── checklist-template.md
+│       ├── constitution-template.md
+│       ├── plan-template.md
+│       ├── spec-template.md
+│       └── tasks-template.md
 ├── api/                 # Endpoints Serverless (Vercel Node.js Functions)
 │   ├── config.js        # Distribuidor seguro de claves de Supabase
 │   └── ping.js          # Mantenimiento y keep-alive de base de datos
 ├── css/                 # Hojas de estilo
 │   └── style.css        # Diseño UI (Glassmorphism, temas)
-├── doc/                 # Documentación histórica del curso y templates
+├── doc/                 # Documentación histórica del proyecto
 ├── js/                  # Lógica de la aplicación
 │   ├── app.js           # Orquestador del DOM y flujo de UI
 │   ├── calculations.js  # Motor financiero (operaciones centesimales)
+│   ├── calculations.test.js # Suite de pruebas unitarias
 │   └── storage.js       # Capa de persistencia (Supabase / LocalStorage)
-├── spec/                # Espec. y Planes (Spec-Driven Development)
-│   ├── constitution/    # Constitución estable del proyecto
-│   ├── features/        # Carpetas de features individuales (spec + plan + tasks)
-│   └── memory/          # Memoria persistente de sesiones y decisiones
+├── specs/               # Especificaciones activas y roadmap (Spec Kit)
+│   ├── 000-commonpay-core/
+│   │   ├── checklist.md
+│   │   ├── plan.md
+│   │   ├── spec.md
+│   │   └── tasks.md
+│   └── README.md        # Roadmap oficial y registro de specs
 ├── index.html           # Interfaz de usuario PWA y enlaces CDN
 ├── sw.js                # Service Worker para funcionamiento offline
 ├── manifest.json        # Archivo de configuración de la PWA
@@ -69,12 +89,12 @@ CommonPay-main/
 - **Variables y Funciones:** `camelCase` en JavaScript.
 - **Clases y Componentes:** `PascalCase` si los hubiera.
 - **Base de Datos / SQL:** `snake_case` para tablas, columnas y funciones de Supabase.
-- **Archivos:** `kebab-case` para assets y especificaciones; `camelCase` para scripts de JS si se integran como librerías (ej: `calculations.js`).
+- **Archivos:** `kebab-case` para assets y especificaciones; `camelCase` para scripts de JS (ej: `calculations.js`).
 
 ### 2. Estructura y Organización
 - Toda lógica matemática y de cálculo de negocio **debe** residir en `js/calculations.js`.
 - La interacción con bases de datos o `LocalStorage` **debe** canalizarse en `js/storage.js`.
-- El manejo directo del DOM y eventos de usuario resides en `js/app.js`.
+- El manejo directo del DOM y eventos de usuario reside en `js/app.js`.
 
 ### 3. Aritmética Financiera (Obligatorio)
 - **Nunca** operes con números flotantes directamente para sumas/restas de euros.
@@ -106,16 +126,22 @@ CommonPay-main/
 
 ---
 
-## 🔄 Flujo de Trabajo
-1. **Planificación (Plan Mode):** Antes de cualquier tarea de desarrollo no trivial, escribe o actualiza el archivo de especificación en `spec/features/` y espera la aprobación del usuario.
-2. **Desglose de Tareas:** Crea un checklist detallado en `tasks.md` de la feature antes de programar.
-3. **Iteración Autónoma (Loop Engineering):** Implementa los cambios y valida inmediatamente mediante el linter, los tests y la compilación.
-4. **Verificación:** Todo cambio debe estar documentado en `walkthrough.md` antes de entregarse.
-5. **Comandos de OpenCode:** Utiliza siempre los flujos de comandos `/feature`, `/bugfix`, `/verify`, `/review` definidos en `.opencode/commands/`.
+## 🔄 Flujo de Trabajo Spec Kit (Spec-Driven Development)
+
+El ciclo de desarrollo sigue el flujo canónico de **GitHub Spec Kit**:
+
+1. **`/speckit.constitution` (Constitución):** Consulta o actualización de los principios rectores en `.specify/memory/constitution.md`.
+2. **`/speckit.specify` (Especificación):** Creación del documento de requisitos `specs/NNN-nombre/spec.md` con historias de usuario y criterios de aceptación medibles.
+3. **`/speckit.clarify` (Clarificación):** Proceso interactivo de desambiguación y resolución de dudas antes de diseñar la solución.
+4. **`/speckit.plan` (Planificación Técnica):** Generación del blueprint técnico en `specs/NNN-nombre/plan.md`.
+5. **`/speckit.checklist` (Puertas de Calidad):** Definición de la lista de control en `specs/NNN-nombre/checklist.md`.
+6. **`/speckit.tasks` (Tareas):** Desglose en tareas atómicas y dependencias en `specs/NNN-nombre/tasks.md`.
+7. **`/speckit.implement` (Implementación):** Ejecución secuencial de tareas validando cada cambio.
+8. **`/speckit.converge` (Convergencia / Verificación):** Puerta de validación final con la suite completa de calidad.
 
 ---
 
-## 🏆 Ciclo de Validación Obligatorio
+## 🏆 Puerta de Calidad Obligatoria (Convergence Gate)
 Antes de dar cualquier tarea por finalizada, el agente **debe** validar satisfactoriamente:
 1. `npm run lint` — Sin errores ni advertencias de estilo.
 2. `npm run test` — 100% de los tests unitarios pasados.

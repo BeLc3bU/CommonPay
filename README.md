@@ -20,11 +20,21 @@ CommonPay es una aplicación web responsiva e interactiva diseñada para la gest
 
 ## 📂 Estructura del Código
 
-El proyecto está diseñado bajo una arquitectura modular y ligera:
+El proyecto está diseñado bajo una arquitectura modular y ligera gobernada por **GitHub Spec Kit**:
 
 ```
 CommonPay-main/
-├── .opencode/           # Arnés de OpenCode (skills y comandos del agente)
+├── .specify/            # Arnés y configuración de GitHub Spec Kit
+│   ├── commands/        # Comandos del ciclo de vida (/speckit.*)
+│   ├── memory/          # Constitución y decisiones de arquitectura (ADRs)
+│   │   ├── constitution.md
+│   │   └── decisions.md
+│   └── templates/       # Plantillas estándar (spec, plan, tasks, checklist)
+│       ├── checklist-template.md
+│       ├── constitution-template.md
+│       ├── plan-template.md
+│       ├── spec-template.md
+│       └── tasks-template.md
 ├── api/                 # Endpoints Serverless (Vercel Node.js Functions)
 ├── css/
 │   └── style.css        # Estilos CSS (Glassmorphism, temas Claro/Oscuro)
@@ -33,9 +43,13 @@ CommonPay-main/
 │   ├── calculations.js  # Lógica de cálculo financiero (Cálculos en céntimos)
 │   ├── calculations.test.js # Suite de pruebas unitarias locales
 │   └── storage.js       # Persistencia local / remota (Supabase y LocalStorage)
-├── spec/                # Spec-Driven Development (SDD)
-│   ├── constitution/    # Misión, Tech Stack y Roadmap estables
-│   └── memory/          # Memoria persistente e historial de sesiones
+├── specs/               # Especificaciones activas y roadmap (Spec Kit)
+│   ├── 000-commonpay-core/
+│   │   ├── checklist.md
+│   │   ├── plan.md
+│   │   ├── spec.md
+│   │   └── tasks.md
+│   └── README.md        # Roadmap oficial y registro de specs
 ├── index.html           # Interfaz de usuario (HTML5 con CDNs)
 ├── package.json         # Configuración del entorno de automatización (Vite/Vitest)
 ├── README.md            # Documentación general del proyecto (este archivo)
@@ -68,7 +82,7 @@ Para inicializar el entorno de desarrollo y validación automática del proyecto
 
 #### Paso A: Inicializar base de datos en Supabase
 1. Crea un proyecto en [Supabase](https://supabase.com/).
-2. Ejecuta el archivo SQL de inicialización [supabase_fianza_historial.sql](file:///c:/Users/pubes/Desktop/Proyectos/CommonPay-main/supabase_fianza_historial.sql) en el SQL Editor de Supabase para estructurar las tablas y activar Row Level Security (RLS).
+2. Ejecuta el archivo SQL de inicialización [supabase_fianza_historial.sql](file:///c:/Proyectos/mamalotapp/supabase_fianza_historial.sql) en el SQL Editor de Supabase para estructurar las tablas y activar Row Level Security (RLS).
 3. Añade un usuario en **Auth -> Users** de Supabase para Pedro (Editor). Olga podrá leer sin iniciar sesión.
 
 #### Paso B: Desplegar en Vercel
@@ -76,13 +90,13 @@ Para inicializar el entorno de desarrollo y validación automática del proyecto
 2. Agrega las variables de entorno en Vercel (Settings -> Environment Variables):
    - `SUPABASE_URL`: Endpoint de tu proyecto Supabase.
    - `SUPABASE_ANON_KEY`: Clave pública anónima de Supabase.
-3. Despliega la aplicación. Vercel activará automáticamente el cron de keep-alive en `/api/ping` según [vercel.json](file:///c:/Users/pubes/Desktop/Proyectos/CommonPay-main/vercel.json).
+3. Despliega la aplicación. Vercel activará automáticamente el cron de keep-alive en `/api/ping` según [vercel.json](file:///c:/Proyectos/mamalotapp/vercel.json).
 
 ---
 
 ## 📊 Lógica Financiera y Redondeo Centesimal
 
-Para evitar las imprecisiones aritméticas características del punto flotante en JavaScript (como por ejemplo que `716.81 - 462.00` resulte en `254.80999999999995`), toda la lógica implementada en [calculations.js](file:///c:/Users/pubes/Desktop/Proyectos/CommonPay-main/js/calculations.js) procesa los importes monetarios multiplicándolos primero por **100** para trabajar con números enteros (**céntimos de euro**). 
+Para evitar las imprecisiones aritméticas características del punto flotante en JavaScript (como por ejemplo que `716.81 - 462.00` resulte en `254.80999999999995`), toda la lógica implementada en [calculations.js](file:///c:/Proyectos/mamalotapp/js/calculations.js) procesa los importes monetarios multiplicándolos primero por **100** para trabajar con números enteros (**céntimos de euro**). 
 
 Los resultados finales se redondean al entero más cercano y se dividen de nuevo por **100** para retornar el valor exacto en euros:
 
@@ -97,12 +111,11 @@ $$\text{Importe exacto} = \frac{\text{Math.round}(\text{Importe flotante} \times
 
 ---
 
-## 🤖 Desarrollo AI-First (OpenCode & SDD)
+## 🤖 Desarrollo AI-First (GitHub Spec Kit & SDD)
 
-Este repositorio está diseñado bajo el paradigma **AI-First**, permitiendo su evolución mediante agentes inteligentes autónomos.
+Este repositorio está diseñado bajo el paradigma **Spec-Driven Development (SDD)** con [GitHub Spec Kit](https://github.com/github/spec-kit):
 
-- **Arnés de IA ([AGENTS.md](file:///c:/Users/pubes/Desktop/Proyectos/CommonPay-main/AGENTS.md)):** System prompt persistente con el stack, comandos y convenciones del código.
-- **Estructura `.opencode/`:** Aloja las directrices de dominio (`skills/`) y automatización de comandos de agentes (`commands/` como `/verify`, `/bugfix`, `/feature`).
-- **Spec-Driven Development (`spec/`):** La verdad del proyecto se define en especificaciones y planes de diseño antes de programar cualquier línea de código.
-- **Persistencia de Memoria (`spec/memory/`):** Almacena el historial de sesiones y decisiones técnicas importantes (ADRs).
-
+- **Arnés de IA ([AGENTS.md](file:///c:/Proyectos/mamalotapp/AGENTS.md)):** System prompt persistente con el stack, convenciones e instrucciones del flujo Spec Kit.
+- **Configuración `.specify/`:** Contiene la constitución del proyecto (`.specify/memory/constitution.md`), decisiones ADRs (`.specify/memory/decisions.md`), plantillas (`.specify/templates/`) y comandos (`.specify/commands/`).
+- **Especificaciones Funcionales (`specs/`):** La verdad del proyecto reside en `specs/` donde cada funcionalidad contiene su ciclo completo: `spec.md`, `plan.md`, `tasks.md` y `checklist.md`.
+- **Ciclo de Comandos Spec Kit:** `/speckit.constitution`, `/speckit.specify`, `/speckit.clarify`, `/speckit.plan`, `/speckit.checklist`, `/speckit.tasks`, `/speckit.implement` y `/speckit.converge`.
