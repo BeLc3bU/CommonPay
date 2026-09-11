@@ -536,10 +536,22 @@ document.addEventListener('DOMContentLoaded', () => {
     btnCancelLogin.addEventListener('click', () => cerrarModalLogin());
     loginForm.addEventListener('submit', procesarLogin);
 
-    // Cerrar modal al hacer click fuera
+    // Cerrar modales al hacer click fuera
+    const pdfDownloadModal = document.getElementById('pdf-download-modal');
+    const btnClosePdfModal = document.getElementById('btn-close-pdf-modal');
+
+    if (btnClosePdfModal && pdfDownloadModal) {
+      btnClosePdfModal.addEventListener('click', () => {
+        pdfDownloadModal.style.display = 'none';
+      });
+    }
+
     window.addEventListener('click', (e) => {
       if (e.target === loginModal) {
         cerrarModalLogin();
+      }
+      if (pdfDownloadModal && e.target === pdfDownloadModal) {
+        pdfDownloadModal.style.display = 'none';
       }
     });
 
@@ -1804,86 +1816,331 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // EXPORTAR MES EN CURSO A PDF
-  function exportarPdfMes() {
+  // --- MOTOR UNIVERSAL DE EXPORTACIÓN Y DESCARGA DE PDF ---
+
+  function mostrarModalDescargaPdf(blobUrl, filename) {
+    const modal = document.getElementById('pdf-download-modal');
+    const btnDescarga = document.getElementById('btn-pdf-modal-download');
+    if (modal && btnDescarga) {
+      btnDescarga.href = blobUrl;
+      btnDescarga.download = filename;
+      modal.style.display = 'flex';
+      if (window.lucide) lucide.createIcons();
+    }
+  }
+
+  /**
+   * Entrega el Blob PDF al usuario mediante Web Share API (móviles/PWA) o descarga directa con modal de respaldo.
+   */
+  async function entregarArchivoPdf(pdfBlob, filename) {
+    const file = new File([pdfBlob], filename, { type: 'application/pdf' });
+
+    // 1. Web Share API nativa (iOS Safari, Android Chrome, PWAs instaladas)
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: filename,
+          text: `Informe ${filename} generado desde CommonPay`
+        });
+        return;
+      } catch (shareErr) {
+        if (shareErr.name === 'AbortError') return; // Cancelado voluntariamente por el usuario
+        console.warn('Fallo en navigator.share, procediendo a descarga directa:', shareErr);
+      }
+    }
+
+    // 2. Descarga tradicional por Blob URL
+    const blobUrl = URL.createObjectURL(pdfBlob);
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+    if (isIOS) {
+      // En iOS Safari, a.download en blobs se bloquea; abrimos la URL del blob en pestaña nueva
+      const win = window.open(blobUrl, '_blank');
+      if (!win) {
+        window.location.href = blobUrl;
+      }
+    } else {
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        document.body.removeChild(link);
+      }, 2000);
+    }
+
+    // 3. Mostrar modal de confirmación con enlace directo de respaldo
+    mostrarModalDescargaPdf(blobUrl, filename);
+  }
+
+  // Generador de plantilla A4 limpia para el mes en curso
+  function crearContenedorImprimibleMes() {
     const mesNombre = NOMBRES_MESES[currentMonthIndex];
-    const element = document.getElementById('pdf-printable-area');
+    const desglose = window.CalculationsModule.calcularDesgloseMes(currentMonthIndex, appConfig);
+    const fianzaAcum = appConfig.fianza?.acumulado || 410.0;
+    const superavitOlga = appConfig.gastosPersonales?.olga?.superavit || 115.57;
+    const dineroEsperado = window.CalculationsModule.calcularDineroEsperadoCuenta(fianzaAcum, superavitOlga);
 
-    // Configuración estética del PDF
-    const opt = {
-      margin: 10,
-      filename: `CommonPay_Desglose_${mesNombre}_2026.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        backgroundColor:
-          document.documentElement.getAttribute('data-theme') === 'dark' ? '#090d16' : '#f5f7fb'
-      },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-    };
+    const temp = document.createElement('div');
+    temp.id = 'temp-pdf-mes-container';
+    temp.style.cssText = 'position:fixed;left:-9999px;top:0;width:1050px;padding:32px;background:#ffffff;color:#1e293b;font-family:system-ui,-apple-system,sans-serif;box-sizing:border-box;z-index:-1000;';
 
-    html2pdf().set(opt).from(element).save();
+    temp.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #e2e8f0;padding-bottom:16px;margin-bottom:24px;">
+        <div>
+          <h1 style="margin:0;font-size:24px;font-weight:800;color:#4f46e5;">CommonPay</h1>
+          <p style="margin:4px 0 0 0;font-size:13px;color:#64748b;">Desglose Financiero Mensual &bull; ${mesNombre} ${currentAnio}</p>
+        </div>
+        <div style="text-align:right;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 16px;border-radius:8px;">
+          <span style="font-size:11px;color:#64748b;display:block;">Fondo a Salvaguardar en Cuenta:</span>
+          <strong style="font-size:17px;color:#15803d;">${formatMoneda(dineroEsperado)} €</strong>
+          <span style="font-size:10px;color:#94a3b8;display:block;">(Fianza ${formatMoneda(fianzaAcum)} € + Superávit Olga ${formatMoneda(superavitOlga)} €)</span>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+        <!-- Tarjeta Olga -->
+        <div style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;padding:20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <strong style="font-size:18px;color:#4f46e5;">Olga</strong>
+            <span style="font-size:22px;font-weight:800;color:#4f46e5;">${formatMoneda(desglose.desgloseOlga.total)} €</span>
+          </div>
+          <div style="border-top:1px dashed #cbd5e1;padding-top:12px;">
+            ${desglose.desgloseOlga.conceptos.map(c => `
+              <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #f1f5f9;">
+                <span style="color:#64748b;">${c.nombre}</span>
+                <strong style="color:#1e293b;">${formatMoneda(c.valor)} €</strong>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Tarjeta Pedro -->
+        <div style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;padding:20px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <strong style="font-size:18px;color:#2563eb;">Pedro</strong>
+            <span style="font-size:22px;font-weight:800;color:#2563eb;">${formatMoneda(desglose.desglosePedro.total)} €</span>
+          </div>
+          <div style="border-top:1px dashed #cbd5e1;padding-top:12px;">
+            ${desglose.desglosePedro.conceptos.map(c => `
+              <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #f1f5f9;">
+                <span style="color:#64748b;">${c.nombre}</span>
+                <strong style="color:#1e293b;">${formatMoneda(c.valor)} €</strong>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:12px;display:flex;justify-content:space-between;">
+        <span>Documento oficial de control doméstico &bull; Generado el ${new Date().toLocaleDateString('es-ES')}</span>
+        <span>CommonPay App</span>
+      </div>
+    `;
+
+    document.body.appendChild(temp);
+    return temp;
+  }
+
+  // Generador de plantilla A4 limpia para Previsión Anual
+  function crearContenedorImprimiblePrevision(persona) {
+    const esOlga = persona === 'olga';
+    const personaNombre = esOlga ? 'Olga' : 'Pedro';
+    const colorHex = esOlga ? '#4f46e5' : '#2563eb';
+    const colorLightHex = esOlga ? '#eef2ff' : '#eff6ff';
+
+    const temp = document.createElement('div');
+    temp.id = 'temp-pdf-prevision-container';
+    temp.style.cssText = 'position:fixed;left:-9999px;top:0;width:1100px;padding:32px;background:#ffffff;color:#1e293b;font-family:system-ui,-apple-system,sans-serif;box-sizing:border-box;z-index:-1000;';
+
+    let totalAnual = 0;
+    let totalHipoteca = 0;
+    let totalComunidad = 0;
+    let totalFianza = 0;
+    let totalExtra = 0;
+    let filasHTML = '';
+
+    for (let m = 0; m < 12; m++) {
+      const desg = window.CalculationsModule.calcularDesgloseMes(m, appConfig);
+      const conceptos = esOlga ? desg.desgloseOlga.conceptos : desg.desglosePedro.conceptos;
+      const total = esOlga ? desg.desgloseOlga.total : desg.desglosePedro.total;
+
+      const hipoteca = conceptos.find((c) => c.nombre.includes('Hipoteca'))?.valor || 0;
+      const comunidad = conceptos.find((c) => c.nombre.includes('Comunidad'))?.valor || 0;
+      const fianza = conceptos.find((c) => c.tipo === 'fianza')?.valor || 0;
+      const coche = esOlga ? conceptos.find((c) => c.nombre.includes('Coche'))?.valor || 0 : 0;
+      const manutencion = esOlga ? conceptos.find((c) => c.nombre.includes('Manutenci'))?.valor || 0 : 0;
+      const extraordinarios = conceptos.filter((c) => c.tipo === 'extraordinario').reduce((s, c) => s + c.valor, 0);
+
+      totalAnual += total;
+      totalHipoteca += hipoteca;
+      totalComunidad += comunidad;
+      totalFianza += fianza;
+      totalExtra += extraordinarios;
+
+      const tdCoche = esOlga ? `<td style="text-align:right;padding:8px 10px;">${formatMoneda(coche)} €</td>` : '';
+      const tdManutencion = esOlga ? `<td style="text-align:right;padding:8px 10px;">${formatMoneda(manutencion)} €</td>` : '';
+
+      filasHTML += `
+        <tr style="border-bottom:1px solid #e2e8f0;background:${m % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+          <td style="padding:8px 10px;font-weight:600;">${NOMBRES_MESES[m]}</td>
+          <td style="text-align:right;padding:8px 10px;">${formatMoneda(hipoteca)} €</td>
+          <td style="text-align:right;padding:8px 10px;">${formatMoneda(comunidad)} €</td>
+          <td style="text-align:right;padding:8px 10px;">${formatMoneda(fianza)} €</td>
+          ${tdCoche}
+          ${tdManutencion}
+          <td style="text-align:right;padding:8px 10px;">${extraordinarios > 0 ? formatMoneda(extraordinarios) + ' €' : '—'}</td>
+          <td style="text-align:right;padding:8px 10px;font-weight:700;color:${colorHex};">${formatMoneda(total)} €</td>
+        </tr>
+      `;
+    }
+
+    const tdCocheTot = esOlga ? '<td style="text-align:right;font-weight:700;padding:10px;">-</td>' : '';
+    const tdManutencionTot = esOlga ? '<td style="text-align:right;font-weight:700;padding:10px;">-</td>' : '';
+
+    temp.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #e2e8f0;padding-bottom:16px;margin-bottom:20px;">
+        <div>
+          <h1 style="margin:0;font-size:24px;font-weight:800;color:${colorHex};">CommonPay</h1>
+          <p style="margin:4px 0 0 0;font-size:13px;color:#64748b;">Previsión Anual de Pagos &bull; ${personaNombre} &bull; Ejercicio ${currentAnio}</p>
+        </div>
+        <div style="text-align:right;background:${colorLightHex};border:1.5px solid ${colorHex};padding:10px 18px;border-radius:10px;">
+          <span style="font-size:11px;color:#64748b;display:block;">TOTAL ANUAL PREVISTO:</span>
+          <strong style="font-size:20px;color:${colorHex};">${formatMoneda(totalAnual)} €</strong>
+        </div>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;margin-bottom:20px;font-size:12px;">
+        <thead>
+          <tr style="background:#f1f5f9;border-bottom:2px solid #cbd5e1;">
+            <th style="padding:10px;text-align:left;color:#475569;">Mes</th>
+            <th style="padding:10px;text-align:right;color:#475569;">Hipoteca (50%)</th>
+            <th style="padding:10px;text-align:right;color:#475569;">Comunidad (50%)</th>
+            <th style="padding:10px;text-align:right;color:#475569;">Fianza</th>
+            ${esOlga ? '<th style="padding:10px;text-align:right;color:#475569;">Coche</th><th style="padding:10px;text-align:right;color:#475569;">Manutención</th>' : ''}
+            <th style="padding:10px;text-align:right;color:#475569;">Extraordinarios</th>
+            <th style="padding:10px;text-align:right;color:${colorHex};font-weight:700;">Aportación Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filasHTML}
+          <tr style="background:${colorLightHex};border-top:2.5px solid ${colorHex};">
+            <td style="padding:10px;font-weight:800;">TOTAL ANUAL</td>
+            <td style="text-align:right;font-weight:700;padding:10px;">${formatMoneda(totalHipoteca)} €</td>
+            <td style="text-align:right;font-weight:700;padding:10px;">${formatMoneda(totalComunidad)} €</td>
+            <td style="text-align:right;font-weight:700;padding:10px;">${formatMoneda(totalFianza)} €</td>
+            ${tdCocheTot}
+            ${tdManutencionTot}
+            <td style="text-align:right;font-weight:700;padding:10px;">${formatMoneda(totalExtra)} €</td>
+            <td style="text-align:right;font-weight:800;color:${colorHex};font-size:14px;padding:10px;">${formatMoneda(totalAnual)} €</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:10px;display:flex;justify-content:space-between;">
+        <span>Documento financiero emitido desde CommonPay &bull; Fecha: ${new Date().toLocaleDateString('es-ES')}</span>
+        <span>Revisión Hipoteca (777,37 € desde Octubre) &bull; IRAV Alquiler (2%) &bull; IPC Manutención (2%)</span>
+      </div>
+    `;
+
+    document.body.appendChild(temp);
+    return temp;
+  }
+
+  // EXPORTAR MES EN CURSO A PDF
+  async function exportarPdfMes() {
+    const mesNombre = NOMBRES_MESES[currentMonthIndex];
+    const filename = `CommonPay_Desglose_${mesNombre}_${currentAnio}.pdf`;
+    const btn = document.getElementById('btn-exportar-pdf-mes');
+    const originalBtnHTML = btn ? btn.innerHTML : '';
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Generando...';
+      if (window.lucide) lucide.createIcons();
+    }
+
+    const tempElement = crearContenedorImprimibleMes();
+
+    try {
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+      };
+
+      const pdfBlob = await html2pdf().set(opt).from(tempElement).outputPdf('blob');
+      await entregarArchivoPdf(pdfBlob, filename);
+    } catch (err) {
+      console.error('Error al exportar PDF del mes:', err);
+      alert('Error al generar el PDF del mes: ' + (err.message || err));
+    } finally {
+      if (tempElement && tempElement.parentNode) {
+        tempElement.parentNode.removeChild(tempElement);
+      }
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHTML;
+        if (window.lucide) lucide.createIcons();
+      }
+    }
   }
 
   // EXPORTAR PREVISIÓN ANUAL A PDF
-  function exportarPdfPrevision() {
+  async function exportarPdfPrevision() {
     const selectPersona = document.getElementById('prevision-persona-select');
     const persona = selectPersona ? selectPersona.value : 'olga';
     const personaNombre = persona === 'olga' ? 'Olga' : 'Pedro';
-    const element = document.getElementById('prevision-printable-area');
+    const filename = `CommonPay_Prevision_Anual_${personaNombre}_${currentAnio}.pdf`;
+    const btn = document.getElementById('btn-exportar-pdf-prevision');
+    const originalBtnHTML = btn ? btn.innerHTML : '';
 
-    if (!element) return;
-
-    const cardsContainer = document.getElementById('prevision-cards-container');
-    const tableContainer = document.getElementById('prevision-table-container');
-
-    // Durante la generación del PDF aseguramos que la tabla completa se renderice
-    const prevCardsDisplay = cardsContainer ? cardsContainer.style.display : '';
-    const prevTableDisplay = tableContainer ? tableContainer.style.display : '';
-    if (cardsContainer) cardsContainer.style.display = 'none';
-    if (tableContainer) {
-      tableContainer.style.display = 'block';
-      tableContainer.classList.remove('view-hidden');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Generando...';
+      if (window.lucide) lucide.createIcons();
     }
 
-    const opt = {
-      margin: 10,
-      filename: `CommonPay_Prevision_Anual_${personaNombre}_${currentAnio}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        backgroundColor:
-          document.documentElement.getAttribute('data-theme') === 'dark' ? '#090d16' : '#f5f7fb'
-      },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-    };
+    const tempElement = crearContenedorImprimiblePrevision(persona);
 
-    html2pdf()
-      .set(opt)
-      .from(element)
-      .save()
-      .then(() => {
-        if (cardsContainer) cardsContainer.style.display = prevCardsDisplay;
-        if (tableContainer) {
-          tableContainer.style.display = prevTableDisplay;
-          const btnToggleTable = document.getElementById('btn-prevision-table');
-          if (btnToggleTable && !btnToggleTable.classList.contains('active')) {
-            tableContainer.classList.add('view-hidden');
-          }
-        }
-      })
-      .catch(() => {
-        if (cardsContainer) cardsContainer.style.display = prevCardsDisplay;
-        if (tableContainer) {
-          tableContainer.style.display = prevTableDisplay;
-          const btnToggleTable = document.getElementById('btn-prevision-table');
-          if (btnToggleTable && !btnToggleTable.classList.contains('active')) {
-            tableContainer.classList.add('view-hidden');
-          }
-        }
-      });
+    try {
+      const opt = {
+        margin: [10, 10, 10, 10],
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+      };
+
+      const pdfBlob = await html2pdf().set(opt).from(tempElement).outputPdf('blob');
+      await entregarArchivoPdf(pdfBlob, filename);
+    } catch (err) {
+      console.error('Error al exportar PDF de previsión:', err);
+      alert('Error al generar el PDF de previsión: ' + (err.message || err));
+    } finally {
+      if (tempElement && tempElement.parentNode) {
+        tempElement.parentNode.removeChild(tempElement);
+      }
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHTML;
+        if (window.lucide) lucide.createIcons();
+      }
+    }
   }
 
   // EXPORTAR HISTORIAL A EXCEL (XLSX)
