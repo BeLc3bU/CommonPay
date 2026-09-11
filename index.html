@@ -1226,6 +1226,16 @@
             </div>
           </div>
 
+          <!-- SELECTOR DE VISTA EN MÓVIL (TARJETAS / TABLA) -->
+          <div class="prevision-view-toggle mobile-only">
+            <button type="button" class="prevision-toggle-btn active" id="btn-prevision-cards">
+              <i data-lucide="layout-grid"></i> Tarjetas por Mes
+            </button>
+            <button type="button" class="prevision-toggle-btn" id="btn-prevision-table">
+              <i data-lucide="table"></i> Tabla Detallada
+            </button>
+          </div>
+
           <!-- ÁREA IMPRIMIBLE EN PDF -->
           <div id="prevision-printable-area">
             <!-- RESUMEN ANUAL TOP -->
@@ -1233,19 +1243,28 @@
               <!-- Inyectado por JS -->
             </div>
 
-            <!-- TABLA MENSUAL -->
-            <div class="glass-card" style="padding: 0; overflow: hidden">
+            <!-- VISTA TARJETAS MÓVIL (Especialmente adaptada para pantallas de móvil) -->
+            <div id="prevision-cards-container" class="prevision-cards-container">
+              <!-- Inyectado por JS -->
+            </div>
+
+            <!-- TABLA MENSUAL (Desktop por defecto, alternable en móvil) -->
+            <div id="prevision-table-container" class="glass-card prevision-table-card" style="padding: 0; overflow: hidden">
               <div class="prevision-table-header">
                 <h3 id="prevision-table-title" style="font-size: 1.1rem">
                   Calendario de Aportaciones — Olga
                 </h3>
                 <span id="prevision-total-badge" class="prevision-total-badge"></span>
               </div>
-              <div class="table-wrapper" style="border: none; border-radius: 0">
-                <table id="prevision-tabla" style="min-width: 680px">
+              <div class="table-scroll-hint mobile-only">
+                <i data-lucide="chevrons-left-right" style="width: 15px; height: 15px;"></i>
+                <span>Desliza horizontalmente para ver todos los conceptos</span>
+              </div>
+              <div class="table-wrapper prevision-table-wrapper" style="border: none; border-radius: 0">
+                <table id="prevision-tabla" class="prevision-table">
                   <thead>
                     <tr>
-                      <th>Mes</th>
+                      <th class="sticky-col">Mes</th>
                       <th style="text-align: right">Hipoteca (50%)</th>
                       <th style="text-align: right">Comunidad (50%)</th>
                       <th style="text-align: right">Fianza</th>

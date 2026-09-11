@@ -491,6 +491,28 @@ document.addEventListener('DOMContentLoaded', () => {
       selectPersona.addEventListener('change', actualizarVistaPrevision);
     }
 
+    // Conmutador de vistas en Previsión Anual para móviles (Tarjetas vs Tabla)
+    const btnPrevisionCards = document.getElementById('btn-prevision-cards');
+    const btnPrevisionTable = document.getElementById('btn-prevision-table');
+    const cardsContainerEl = document.getElementById('prevision-cards-container');
+    const tableContainerEl = document.getElementById('prevision-table-container');
+
+    if (btnPrevisionCards && btnPrevisionTable) {
+      btnPrevisionCards.addEventListener('click', () => {
+        btnPrevisionCards.classList.add('active');
+        btnPrevisionTable.classList.remove('active');
+        if (cardsContainerEl) cardsContainerEl.classList.add('view-active');
+        if (tableContainerEl) tableContainerEl.classList.add('view-hidden');
+      });
+
+      btnPrevisionTable.addEventListener('click', () => {
+        btnPrevisionTable.classList.add('active');
+        btnPrevisionCards.classList.remove('active');
+        if (cardsContainerEl) cardsContainerEl.classList.remove('view-active');
+        if (tableContainerEl) tableContainerEl.classList.remove('view-hidden');
+      });
+    }
+
     const btnGcalOlga = document.getElementById('btn-gcal-olga');
     if (btnGcalOlga) btnGcalOlga.addEventListener('click', () => abrirGoogleCalendar('olga'));
 
@@ -1539,13 +1561,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (thCoche) thCoche.style.display = esOlga ? '' : 'none';
     if (thManutencion) thManutencion.style.display = esOlga ? '' : 'none';
 
-    // Construir filas mes a mes
+    // Construir filas mes a mes (tanto para tabla como para tarjetas móviles)
     let totalAnual = 0;
     let totalHipoteca = 0;
     let totalComunidad = 0;
     let totalFianza = 0;
     let totalPersonal = 0;
     let totalExtra = 0;
+    let cardsHTML = '';
     const mesActual = new Date().getMonth();
     const tbody = document.getElementById('prevision-tabla-body');
     if (!tbody) return;
@@ -1594,38 +1617,114 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `<td style="text-align:right;">${formatMoneda(manutencion)} €</td>`
         : '';
 
+      // 1. Fila de la tabla (Desktop y modo Tabla)
       const row = document.createElement('tr');
       if (esMesActual) row.classList.add('prevision-row-actual');
       row.style.cssText = rowStyle;
       row.innerHTML = `
-        <td style="padding:1rem 1.5rem;">${mesNombreHTML}</td>
+        <td class="sticky-col">${mesNombreHTML}</td>
         <td style="text-align:right;">${formatMoneda(hipoteca)} €</td>
         <td style="text-align:right;">${formatMoneda(comunidad)} €</td>
         <td style="text-align:right;">${formatMoneda(fianza)} €</td>
         ${tdCoche}
         ${tdManutencion}
         <td style="text-align:right;">${extraordinarios > 0 ? formatMoneda(extraordinarios) + ' €' : '<span style="color:var(--text-muted)">—</span>'}</td>
-        <td style="${tdTotalStyle}padding:1rem 1.5rem;">${formatMoneda(total)} €</td>
+        <td style="${tdTotalStyle}">${formatMoneda(total)} €</td>
       `;
       tbody.appendChild(row);
+
+      // 2. Tarjeta individual para Móvil
+      cardsHTML += `
+        <div class="prevision-month-card ${esMesActual ? 'is-current-month' : ''}">
+          <div class="prevision-month-header">
+            <div class="prevision-month-title-box">
+              <span class="prevision-month-name">${NOMBRES_MESES[m]}</span>
+              ${esMesActual ? '<span class="badge-mes-actual">Mes Actual</span>' : ''}
+              ${badges ? `<div style="display:flex;gap:4px;flex-wrap:wrap;">${badges}</div>` : ''}
+            </div>
+            <div class="prevision-month-total">
+              <span class="prevision-month-total-label">Aportación</span>
+              <span class="prevision-month-total-val" style="color:${colorPersona};">${formatMoneda(total)} €</span>
+            </div>
+          </div>
+          <div class="prevision-month-body">
+            <div class="prevision-concept-chip">
+              <span class="chip-label">Hipoteca (50%)</span>
+              <span class="chip-val">${formatMoneda(hipoteca)} €</span>
+            </div>
+            <div class="prevision-concept-chip">
+              <span class="chip-label">Comunidad (50%)</span>
+              <span class="chip-val">${formatMoneda(comunidad)} €</span>
+            </div>
+            <div class="prevision-concept-chip">
+              <span class="chip-label">Fianza</span>
+              <span class="chip-val">${formatMoneda(fianza)} €</span>
+            </div>
+            ${
+              esOlga
+                ? `
+            <div class="prevision-concept-chip">
+              <span class="chip-label">Coche</span>
+              <span class="chip-val">${formatMoneda(coche)} €</span>
+            </div>
+            <div class="prevision-concept-chip">
+              <span class="chip-label">Manutención</span>
+              <span class="chip-val">${formatMoneda(manutencion)} €</span>
+            </div>
+            `
+                : ''
+            }
+            <div class="prevision-concept-chip ${extraordinarios > 0 ? 'highlight-extra' : ''}">
+              <span class="chip-label">Extraordinarios</span>
+              <span class="chip-val">${extraordinarios > 0 ? formatMoneda(extraordinarios) + ' €' : '—'}</span>
+            </div>
+          </div>
+        </div>
+      `;
     }
 
-    // Fila de totales
+    // Fila de totales en la tabla
     const tdCocheTot = esOlga ? '<td style="text-align:right;font-weight:700;">-</td>' : '';
     const tdManutencionTot = esOlga ? '<td style="text-align:right;font-weight:700;">-</td>' : '';
     const rowTotal = document.createElement('tr');
     rowTotal.style.cssText = `background-color:${colorLight};border-top:2px solid ${colorPersona};`;
     rowTotal.innerHTML = `
-      <td style="padding:1.1rem 1.5rem;font-weight:800;font-family:'Outfit',sans-serif;font-size:1rem;">TOTAL ANUAL</td>
+      <td class="sticky-col" style="font-weight:800;font-family:'Outfit',sans-serif;font-size:1rem;">TOTAL ANUAL</td>
       <td style="text-align:right;font-weight:700;">${formatMoneda(totalHipoteca)} €</td>
       <td style="text-align:right;font-weight:700;">${formatMoneda(totalComunidad)} €</td>
       <td style="text-align:right;font-weight:700;">${formatMoneda(totalFianza)} €</td>
       ${tdCocheTot}
       ${tdManutencionTot}
       <td style="text-align:right;font-weight:700;">${formatMoneda(totalExtra)} €</td>
-      <td style="text-align:right;font-weight:800;color:${colorPersona};font-size:1.05rem;padding:1.1rem 1.5rem;">${formatMoneda(totalAnual)} €</td>
+      <td style="text-align:right;font-weight:800;color:${colorPersona};font-size:1.05rem;">${formatMoneda(totalAnual)} €</td>
     `;
     tbody.appendChild(rowTotal);
+
+    // Tarjeta de total anual para la vista móvil de tarjetas
+    cardsHTML += `
+      <div class="prevision-card-total-anual">
+        <div>
+          <div class="prevision-card-total-title">TOTAL ANUAL PREVISTO</div>
+          <span style="font-size:0.75rem;color:var(--text-muted);">Suma completa de los 12 meses</span>
+        </div>
+        <div class="prevision-card-total-amount" style="color:${colorPersona};">${formatMoneda(totalAnual)} €</div>
+      </div>
+    `;
+
+    const cardsContainer = document.getElementById('prevision-cards-container');
+    const tableContainer = document.getElementById('prevision-table-container');
+    const btnToggleTable = document.getElementById('btn-prevision-table');
+
+    if (cardsContainer) cardsContainer.innerHTML = cardsHTML;
+
+    // Asegurar estado por defecto en móvil (Tarjetas activas si no se seleccionó tabla)
+    if (cardsContainer && tableContainer) {
+      const tablaSeleccionada = btnToggleTable && btnToggleTable.classList.contains('active');
+      if (!tablaSeleccionada) {
+        cardsContainer.classList.add('view-active');
+        tableContainer.classList.add('view-hidden');
+      }
+    }
 
     // Badge total
     const totalBadge = document.getElementById('prevision-total-badge');
@@ -1736,6 +1835,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!element) return;
 
+    const cardsContainer = document.getElementById('prevision-cards-container');
+    const tableContainer = document.getElementById('prevision-table-container');
+
+    // Durante la generación del PDF aseguramos que la tabla completa se renderice
+    const prevCardsDisplay = cardsContainer ? cardsContainer.style.display : '';
+    const prevTableDisplay = tableContainer ? tableContainer.style.display : '';
+    if (cardsContainer) cardsContainer.style.display = 'none';
+    if (tableContainer) {
+      tableContainer.style.display = 'block';
+      tableContainer.classList.remove('view-hidden');
+    }
+
     const opt = {
       margin: 10,
       filename: `CommonPay_Prevision_Anual_${personaNombre}_${currentAnio}.pdf`,
@@ -1749,7 +1860,30 @@ document.addEventListener('DOMContentLoaded', () => {
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
 
-    html2pdf().set(opt).from(element).save();
+    html2pdf()
+      .set(opt)
+      .from(element)
+      .save()
+      .then(() => {
+        if (cardsContainer) cardsContainer.style.display = prevCardsDisplay;
+        if (tableContainer) {
+          tableContainer.style.display = prevTableDisplay;
+          const btnToggleTable = document.getElementById('btn-prevision-table');
+          if (btnToggleTable && !btnToggleTable.classList.contains('active')) {
+            tableContainer.classList.add('view-hidden');
+          }
+        }
+      })
+      .catch(() => {
+        if (cardsContainer) cardsContainer.style.display = prevCardsDisplay;
+        if (tableContainer) {
+          tableContainer.style.display = prevTableDisplay;
+          const btnToggleTable = document.getElementById('btn-prevision-table');
+          if (btnToggleTable && !btnToggleTable.classList.contains('active')) {
+            tableContainer.classList.add('view-hidden');
+          }
+        }
+      });
   }
 
   // EXPORTAR HISTORIAL A EXCEL (XLSX)

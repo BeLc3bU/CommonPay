@@ -2164,6 +2164,252 @@ tr:hover td {
   color: var(--success);
 }
 
+/* --- Conmutador de vistas en Móvil (Tarjetas vs Tabla) --- */
+.mobile-only {
+  display: none !important;
+}
+
+.prevision-view-toggle {
+  display: none;
+  gap: 0.5rem;
+  background: var(--input-bg);
+  padding: 0.35rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  margin-bottom: 1.25rem;
+  width: 100%;
+}
+
+.prevision-toggle-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Inter', sans-serif;
+}
+
+.prevision-toggle-btn.active {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.prevision-toggle-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* --- Vista de Tarjetas Móviles Mensuales --- */
+.prevision-cards-container {
+  display: none;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+.prevision-month-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.15rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.prevision-month-card.is-current-month {
+  border: 1.5px solid var(--primary);
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.15);
+  background: linear-gradient(145deg, var(--bg-card), var(--primary-light));
+}
+
+.prevision-month-card.is-current-month::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--primary-gradient);
+}
+
+.prevision-month-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px dashed var(--border-color);
+}
+
+.prevision-month-title-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.prevision-month-name {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.badge-mes-actual {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--primary);
+  background-color: var(--primary-light);
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.prevision-month-total {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.prevision-month-total-label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-weight: 500;
+}
+
+.prevision-month-total-val {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.prevision-month-body {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.45rem 0.6rem;
+}
+
+.prevision-concept-chip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--input-bg);
+  padding: 0.4rem 0.65rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.prevision-concept-chip .chip-label {
+  color: var(--text-muted);
+  font-weight: 500;
+  margin-right: 0.35rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prevision-concept-chip .chip-val {
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.prevision-concept-chip.highlight-extra {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.2);
+}
+
+.prevision-concept-chip.highlight-extra .chip-val {
+  color: #f59e0b;
+}
+
+.prevision-card-total-anual {
+  background: linear-gradient(135deg, var(--bg-card), var(--primary-light));
+  border: 1.5px solid var(--primary);
+  border-radius: var(--radius-md);
+  padding: 1.15rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.prevision-card-total-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.prevision-card-total-amount {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 800;
+}
+
+/* --- Tabla con soporte de scroll y columna fija --- */
+.prevision-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 620px;
+}
+
+.prevision-table th,
+.prevision-table td {
+  padding: 0.85rem 1rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.table-scroll-hint {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding: 0.5rem 1rem;
+  background: var(--input-bg);
+  border-bottom: 1px solid var(--border-color);
+  font-weight: 500;
+}
+
+.prevision-table th.sticky-col,
+.prevision-table td.sticky-col {
+  position: sticky;
+  left: 0;
+  background: var(--bg-card);
+  z-index: 2;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.08);
+}
+
+.prevision-table th.sticky-col {
+  background: var(--border-color);
+  z-index: 3;
+}
+
+.prevision-row-actual td.sticky-col {
+  background: inherit;
+}
+
 /* --- Nota informativa inferior --- */
 .prevision-nota {
   display: flex;
@@ -2174,26 +2420,127 @@ tr:hover td {
   border-left: 3px solid var(--primary);
 }
 
-/* --- Responsive --- */
+/* --- Responsive Adaptativo --- */
 @media (max-width: 900px) {
   .prevision-summary-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+  .mobile-only {
+    display: flex !important;
+  }
+
+  /* Conmutador de vistas activo en móvil */
+  .prevision-view-toggle {
+    display: flex;
+  }
+
+  /* Manejo de vista por defecto de tarjetas vs tabla en móvil */
+  .prevision-cards-container.view-active {
+    display: flex;
+  }
+
+  .prevision-table-card.view-hidden {
+    display: none !important;
+  }
+
+  /* Barra de controles */
   .prevision-controls {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+    padding: 1rem 1.15rem;
+    gap: 0.85rem;
   }
 
+  .prevision-controls-left {
+    width: 100%;
+  }
+
+  .prevision-icon-header {
+    width: 36px;
+    height: 36px;
+  }
+
+  .prevision-controls-right {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.5rem;
+    align-items: center;
+  }
+
+  .prevision-select-label {
+    display: none;
+  }
+
+  .prevision-select-wrapper {
+    width: 100%;
+    justify-content: space-between;
+    padding: 0.5rem 0.75rem;
+  }
+
+  #btn-exportar-pdf-prevision {
+    white-space: nowrap;
+    height: 100%;
+    padding: 0 0.85rem;
+  }
+
+  /* Grid de resumen con 2 columnas y Total Previsto ocupando todo el ancho */
   .prevision-summary-grid {
     grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    margin-bottom: 1.15rem;
   }
 
+  .prevision-summary-card {
+    padding: 0.75rem 0.85rem;
+    gap: 0.65rem;
+  }
+
+  .prevision-summary-big {
+    grid-column: 1 / -1;
+  }
+
+  .prevision-summary-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .prevision-summary-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .prevision-summary-value {
+    font-size: 1.05rem;
+  }
+
+  .prevision-summary-label {
+    font-size: 0.72rem;
+  }
+
+  /* Encabezado de la tabla en móvil */
   .prevision-table-header {
-    flex-direction: column;
-    align-items: flex-start;
+    padding: 0.85rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .prevision-total-badge {
+    font-size: 0.78rem;
+    padding: 0.25rem 0.65rem;
+  }
+
+  .table-scroll-hint {
+    display: flex;
+  }
+
+  /* Nota inferior más compacta */
+  .prevision-nota {
+    padding: 0.85rem 1rem;
+    font-size: 0.82rem;
+    margin-top: 1rem;
   }
 }
 
