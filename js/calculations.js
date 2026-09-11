@@ -24,12 +24,12 @@ function calcularDesgloseMes(mesIndex, config) {
 
   // Cargar configuración de alertas y regularizaciones
   const alertas = config.alertas || {
-    mesHipoteca: 8,
+    mesHipoteca: 9,
     mesManutencion: 5,
     mesAlquiler: 10,
     tasaManutencion: 2.0,
     tasaAlquiler: 2.0,
-    cuotaHipotecaNueva: gastosFijos.cuotaHipoteca
+    cuotaHipotecaNueva: 777.37
   };
 
   // 1. Gastos Fijos (con regularizaciones dinámicas según el mes)
@@ -156,8 +156,35 @@ function calcularDesgloseMes(mesIndex, config) {
   };
 }
 
+/**
+ * Calcula la diferencia o superávit entre un ingreso real y una cuota calculada.
+ * @param {number} ingreso - Importe efectivamente ingresado
+ * @param {number} cuota - Cuota calculada correspondiente
+ * @returns {number} Diferencia en euros redondeada a 2 decimales
+ */
+function calcularSuperavit(ingreso, cuota) {
+  const toCentavos = (val) => Math.round((val || 0) * 100);
+  const toEuros = (cents) => cents / 100;
+  const difCents = toCentavos(ingreso) - toCentavos(cuota);
+  return toEuros(difCents);
+}
+
+/**
+ * Calcula el saldo total que debería haber en la cuenta común (Fianza repuesta + Superávit de Olga).
+ * @param {number} fianza - Fianza repuesta/acumulada
+ * @param {number} superavit - Superávit acumulado de Olga
+ * @returns {number} Saldo total esperado redondeado a 2 decimales
+ */
+function calcularDineroEsperadoCuenta(fianza, superavit) {
+  const toCentavos = (val) => Math.round((val || 0) * 100);
+  const toEuros = (cents) => cents / 100;
+  return toEuros(toCentavos(fianza) + toCentavos(superavit));
+}
+
 // Exportamos en el objeto window
 window.CalculationsModule = {
   round,
-  calcularDesgloseMes
+  calcularDesgloseMes,
+  calcularSuperavit,
+  calcularDineroEsperadoCuenta
 };

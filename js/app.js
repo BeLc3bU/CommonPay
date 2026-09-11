@@ -37,8 +37,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const totalPedroEl = document.getElementById('total-pedro');
   const conceptosOlgaEl = document.getElementById('conceptos-olga');
   const conceptosPedroEl = document.getElementById('conceptos-pedro');
+  const olgaSuperavitBadge = document.getElementById('olga-superavit-badge');
+  const olgaSuperavitDetail = document.getElementById('olga-superavit-detail');
   const btnCompletarMes = document.getElementById('btn-completar-mes');
   const btnExportarPdfMes = document.getElementById('btn-exportar-pdf-mes');
+  const btnExportarPdfPrevision = document.getElementById('btn-exportar-pdf-prevision');
+  const dineroEsperadoCuentaEl = document.getElementById('dinero-esperado-cuenta');
+  const dineroEsperadoDesgloseEl = document.getElementById('dinero-esperado-desglose');
+  const conSuperavitOlgaEl = document.getElementById('con-superavit-olga');
+  const conTotalEsperadoCuentaEl = document.getElementById('con-total-esperado-cuenta');
   const alertasMesEl = document.getElementById('alertas-mes');
 
   // Vista Fianza
@@ -72,6 +79,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const cfgFianzaMensual = document.getElementById('cfg-fianza-mensual');
   const cfgOlgaCoche = document.getElementById('cfg-olga-coche');
   const cfgOlgaManutencion = document.getElementById('cfg-olga-manutencion');
+  const cfgOlgaIngresoHabitual = document.getElementById('cfg-olga-ingreso-habitual');
+  const cfgOlgaSuperavit = document.getElementById('cfg-olga-superavit');
   const cfgExtraIbi = document.getElementById('cfg-extra-ibi');
   const cfgExtraSeguro = document.getElementById('cfg-extra-seguro');
   const btnConfigReset = document.getElementById('btn-config-reset');
@@ -122,7 +131,9 @@ document.addEventListener('DOMContentLoaded', () => {
       gastosPersonales: {
         olga: {
           coche: 188.02,
-          manutencion: 189.3
+          manutencion: 189.3,
+          superavit: 115.57,
+          ingresoHabitual: 550.0
         },
         pedro: {}
       },
@@ -146,27 +157,51 @@ document.addEventListener('DOMContentLoaded', () => {
         aportacionMensualPersona: 10.0
       },
       alertas: {
-        mesHipoteca: 8,
-        mesManutencion: 5,
-        mesAlquiler: 10,
-        tasaManutencion: 2.0,
-        tasaAlquiler: 2.0,
-        cuotaHipotecaNueva: 716.81
+        mesHipoteca: 9, // Octubre
+        mesManutencion: 5, // Junio
+        mesAlquiler: 10, // Noviembre
+        tasaManutencion: 2.0, // 2% IPC
+        tasaAlquiler: 2.0, // 2% IRAV
+        cuotaHipotecaNueva: 777.37 // Sube a 777.37 €
       }
     };
 
     try {
       const cfg = localStorage.getItem('commonpay_config');
       appConfig = cfg ? JSON.parse(cfg) : DEFAULT_CONFIG;
+      if (appConfig) {
+        if (!appConfig.alertas) appConfig.alertas = {};
+        if (
+          appConfig.alertas.cuotaHipotecaNueva === undefined ||
+          appConfig.alertas.cuotaHipotecaNueva === 716.81
+        ) {
+          appConfig.alertas.cuotaHipotecaNueva = 777.37;
+        }
+        if (appConfig.alertas.mesHipoteca === undefined || appConfig.alertas.mesHipoteca === 8) {
+          appConfig.alertas.mesHipoteca = 9;
+        }
+        if (!appConfig.gastosPersonales) appConfig.gastosPersonales = {};
+        if (!appConfig.gastosPersonales.olga) appConfig.gastosPersonales.olga = {};
+        if (
+          appConfig.gastosPersonales.olga.superavit === undefined ||
+          appConfig.gastosPersonales.olga.superavit === 0.0 ||
+          appConfig.gastosPersonales.olga.superavit === 62.75
+        ) {
+          appConfig.gastosPersonales.olga.superavit = 115.57;
+        }
+        if (appConfig.gastosPersonales.olga.ingresoHabitual === undefined) {
+          appConfig.gastosPersonales.olga.ingresoHabitual = 550.0;
+        }
+      }
     } catch (e) {
       appConfig = DEFAULT_CONFIG;
     }
 
     try {
       const fz = localStorage.getItem('commonpay_fianza_acumulado');
-      fianzaAcumulado = fz ? parseFloat(fz) : 0.0;
+      fianzaAcumulado = fz && parseFloat(fz) > 0 ? parseFloat(fz) : 410.0;
     } catch (e) {
-      fianzaAcumulado = 0.0;
+      fianzaAcumulado = 410.0;
     }
 
     try {
@@ -298,6 +333,8 @@ document.addEventListener('DOMContentLoaded', () => {
       cfgFianzaMensual,
       cfgOlgaCoche,
       cfgOlgaManutencion,
+      cfgOlgaIngresoHabitual,
+      cfgOlgaSuperavit,
       cfgExtraIbi,
       cfgExtraSeguro,
       cfgAlertaHipoteca,
@@ -423,6 +460,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Exportación a PDF del desglose mensual
     btnExportarPdfMes.addEventListener('click', exportarPdfMes);
+
+    // Exportación a PDF de la previsión anual
+    if (btnExportarPdfPrevision) {
+      btnExportarPdfPrevision.addEventListener('click', exportarPdfPrevision);
+    }
 
     // Aportación extraordinaria manual a la fianza
     btnAportarManual.addEventListener('click', aportarManualFianza);
@@ -700,6 +742,47 @@ document.addEventListener('DOMContentLoaded', () => {
     // Renderizar conceptos Pedro
     renderizarConceptos(conceptosPedroEl, desglose.desglosePedro.conceptos);
 
+    // Renderizar Superávit de Olga
+    const superavitAcumulado = appConfig.gastosPersonales?.olga?.superavit || 0;
+    const ingresoHabitual =
+      appConfig.gastosPersonales?.olga?.ingresoHabitual !== undefined
+        ? appConfig.gastosPersonales.olga.ingresoHabitual
+        : 550.0;
+    const superavitMes = window.CalculationsModule.calcularSuperavit(
+      ingresoHabitual,
+      desglose.desgloseOlga.total
+    );
+
+    if (olgaSuperavitBadge) {
+      olgaSuperavitBadge.className = 'superavit-box-badge';
+      if (superavitAcumulado > 0) {
+        olgaSuperavitBadge.textContent = `+${formatMoneda(superavitAcumulado)} €`;
+      } else if (superavitAcumulado < 0) {
+        olgaSuperavitBadge.classList.add('negative');
+        olgaSuperavitBadge.textContent = `${formatMoneda(superavitAcumulado)} €`;
+      } else {
+        olgaSuperavitBadge.classList.add('neutral');
+        olgaSuperavitBadge.textContent = '0,00 €';
+      }
+    }
+
+    if (olgaSuperavitDetail) {
+      const signoMes = superavitMes > 0 ? '+' : '';
+      olgaSuperavitDetail.innerHTML = `Ingreso habitual: <strong>${formatMoneda(ingresoHabitual)} €</strong> &bull; Superávit este mes: <span style="font-weight: 600; color: ${superavitMes >= 0 ? '#10b981' : '#ef4444'}">${signoMes}${formatMoneda(superavitMes)} €</span>`;
+    }
+
+    // Renderizar Dinero que debería haber en cuenta común (Fianza repuesta + Superávit de Olga)
+    const dineroEsperadoTotal = window.CalculationsModule.calcularDineroEsperadoCuenta(
+      fianzaAcumulado,
+      superavitAcumulado
+    );
+    if (dineroEsperadoCuentaEl) {
+      dineroEsperadoCuentaEl.innerHTML = `${formatMoneda(dineroEsperadoTotal)} <span class="monto-currency">€</span>`;
+    }
+    if (dineroEsperadoDesgloseEl) {
+      dineroEsperadoDesgloseEl.innerHTML = `Fianza repuesta: <strong>${formatMoneda(fianzaAcumulado)} €</strong> + Superávit Olga: <strong>${formatMoneda(superavitAcumulado)} €</strong>`;
+    }
+
     // Verificar si el mes actual está marcado como completado
     const yaRegistrado = historialTransferencias.some(
       (t) => t.mesIndex === currentMonthIndex && t.anio === currentAnio
@@ -750,7 +833,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function actualizarAlertasMes(mesIndex) {
     alertasMesEl.innerHTML = '';
-    const alertas = appConfig.alertas || { mesHipoteca: 8, mesManutencion: 5, mesAlquiler: 10 };
+    const alertas = appConfig.alertas || { mesHipoteca: 9, mesManutencion: 5, mesAlquiler: 10 };
 
     let htmlAlertas = '';
 
@@ -1021,16 +1104,47 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // 2. Registrar en el historial
+    // 2. Calcular superávit de Olga e ingreso registrado
+    const ingresoOlga =
+      appConfig.gastosPersonales?.olga?.ingresoHabitual !== undefined
+        ? appConfig.gastosPersonales.olga.ingresoHabitual
+        : 550.0;
+    const cuotaTeoricaOlga = desglose.desgloseOlga.total;
+    const superavitMes = window.CalculationsModule.calcularSuperavit(ingresoOlga, cuotaTeoricaOlga);
+
+    if (superavitMes !== 0) {
+      const superavitAnteriorCents = Math.round(
+        (appConfig.gastosPersonales?.olga?.superavit || 0) * 100
+      );
+      const superavitMesCents = Math.round(superavitMes * 100);
+      const nuevoSuperavit = (superavitAnteriorCents + superavitMesCents) / 100;
+
+      if (!appConfig.gastosPersonales) appConfig.gastosPersonales = {};
+      if (!appConfig.gastosPersonales.olga) appConfig.gastosPersonales.olga = {};
+      appConfig.gastosPersonales.olga.superavit = nuevoSuperavit;
+
+      try {
+        await window.StorageModule.saveConfiguration(appConfig);
+      } catch (errConfig) {
+        console.error('Error al actualizar superávit de Olga en base de datos:', errConfig);
+      }
+    }
+
+    // 3. Registrar en el historial
     const registro = {
       mesIndex: currentMonthIndex,
       mesNombre: NOMBRES_MESES[currentMonthIndex],
       anio: currentAnio,
       fechaCompletado: new Date().toISOString(),
-      transferenciaOlga: desglose.desgloseOlga.total,
+      transferenciaOlga: ingresoOlga,
       transferenciaPedro: desglose.desglosePedro.total,
       fianzaAlMomento: fianzaAcumulado,
-      desglose: desglose
+      desglose: {
+        ...desglose,
+        ingresoRealOlga: ingresoOlga,
+        cuotaTeoricaOlga: cuotaTeoricaOlga,
+        superavitMesOlga: superavitMes
+      }
     };
 
     try {
@@ -1039,12 +1153,17 @@ document.addEventListener('DOMContentLoaded', () => {
         historialTransferencias = await window.StorageModule.getHistorial();
         actualizarInterfaz();
 
-        let mensaje = `¡Excelente! El mes de ${NOMBRES_MESES[currentMonthIndex]} se ha guardado como completado.`;
+        let mensaje = `¡Excelente! El mes de ${NOMBRES_MESES[currentMonthIndex]} se ha guardado como completado.\n\n- Ingreso registrado para Olga: ${formatMoneda(ingresoOlga)} € (Cuota teórica: ${formatMoneda(cuotaTeoricaOlga)} €).`;
+        if (superavitMes > 0) {
+          mensaje += `\n- Se ha sumado un superávit de +${formatMoneda(superavitMes)} € al saldo acumulado de Olga (Saldo acumulado: ${formatMoneda(appConfig.gastosPersonales.olga.superavit)} €).`;
+        } else if (superavitMes < 0) {
+          mensaje += `\n- Como el ingreso fue inferior a la cuota, se han descontado ${formatMoneda(Math.abs(superavitMes))} € de su superávit (Saldo restante: ${formatMoneda(appConfig.gastosPersonales.olga.superavit)} €).`;
+        }
         if (aportacionRealizada > 0) {
-          mensaje += ` Se han sumado ${formatMoneda(aportacionRealizada)} € al fondo de la fianza.`;
+          mensaje += `\n- Se han sumado ${formatMoneda(aportacionRealizada)} € al fondo de la fianza.`;
         } else {
           mensaje +=
-            ' El fondo de fianza ya estaba al máximo, por lo que no se han añadido importes adicionales.';
+            '\n- El fondo de fianza ya estaba al máximo, por lo que no se han añadido importes adicionales.';
         }
         alert(mensaje);
       } else {
@@ -1264,6 +1383,14 @@ document.addEventListener('DOMContentLoaded', () => {
     cfgFianzaMensual.value = appConfig.fianza.aportacionMensualPersona;
     cfgOlgaCoche.value = appConfig.gastosPersonales.olga.coche;
     cfgOlgaManutencion.value = appConfig.gastosPersonales.olga.manutencion;
+    cfgOlgaIngresoHabitual.value =
+      appConfig.gastosPersonales?.olga?.ingresoHabitual !== undefined
+        ? appConfig.gastosPersonales.olga.ingresoHabitual
+        : 550.0;
+    cfgOlgaSuperavit.value =
+      appConfig.gastosPersonales?.olga?.superavit !== undefined
+        ? appConfig.gastosPersonales.olga.superavit
+        : 0.0;
 
     // Buscar extraordinarios
     const ibi = appConfig.gastosExtraordinarios.find((e) => e.id === 'ibi');
@@ -1274,12 +1401,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Cargar meses de regularización y alertas
     const alertas = appConfig.alertas || {
-      mesHipoteca: 8,
+      mesHipoteca: 9,
       mesManutencion: 5,
       mesAlquiler: 10,
       tasaManutencion: 2.0,
       tasaAlquiler: 2.0,
-      cuotaHipotecaNueva: appConfig.gastosFijos.cuotaHipoteca
+      cuotaHipotecaNueva: 777.37
     };
     cfgAlertaHipoteca.value = alertas.mesHipoteca;
     cfgAlertaManutencion.value = alertas.mesManutencion;
@@ -1301,6 +1428,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const fiaMen = parseFloat(cfgFianzaMensual.value);
     const cocheO = parseFloat(cfgOlgaCoche.value);
     const manO = parseFloat(cfgOlgaManutencion.value);
+    const ingHabO = parseFloat(cfgOlgaIngresoHabitual.value);
+    const superavitO = parseFloat(cfgOlgaSuperavit.value);
     const ibiTotal = parseFloat(cfgExtraIbi.value);
     const seguroTotal = parseFloat(cfgExtraSeguro.value);
 
@@ -1318,12 +1447,14 @@ document.addEventListener('DOMContentLoaded', () => {
         fiaMen,
         cocheO,
         manO,
+        ingHabO,
         ibiTotal,
         seguroTotal,
         cuotaHipNueva,
         ipcTasa,
         iravTasa
-      ].some((v) => isNaN(v) || v < 0)
+      ].some((v) => isNaN(v) || v < 0) ||
+      isNaN(superavitO)
     ) {
       alert(
         'Por favor, asegúrate de que todos los campos son valores numéricos válidos iguales o superiores a 0.'
@@ -1339,6 +1470,8 @@ document.addEventListener('DOMContentLoaded', () => {
     appConfig.fianza.aportacionMensualPersona = fiaMen;
     appConfig.gastosPersonales.olga.coche = cocheO;
     appConfig.gastosPersonales.olga.manutencion = manO;
+    appConfig.gastosPersonales.olga.ingresoHabitual = ingHabO;
+    appConfig.gastosPersonales.olga.superavit = window.CalculationsModule.round(superavitO);
 
     // Modificar extraordinarios
     const ibi = appConfig.gastosExtraordinarios.find((e) => e.id === 'ibi');
@@ -1393,7 +1526,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const esOlga = persona === 'olga';
     const colorPersona = esOlga ? 'var(--primary)' : '#3b82f6';
     const colorLight = esOlga ? 'var(--primary-light)' : 'rgba(59,130,246,0.12)';
-    const alertas = appConfig.alertas || { mesHipoteca: 8, mesManutencion: 5, mesAlquiler: 10 };
+    const alertas = appConfig.alertas || { mesHipoteca: 9, mesManutencion: 5, mesAlquiler: 10 };
 
     // Actualizar cabecera de la tabla
     const tableTitle = document.getElementById('prevision-table-title');
@@ -1594,6 +1727,31 @@ document.addEventListener('DOMContentLoaded', () => {
     html2pdf().set(opt).from(element).save();
   }
 
+  // EXPORTAR PREVISIÓN ANUAL A PDF
+  function exportarPdfPrevision() {
+    const selectPersona = document.getElementById('prevision-persona-select');
+    const persona = selectPersona ? selectPersona.value : 'olga';
+    const personaNombre = persona === 'olga' ? 'Olga' : 'Pedro';
+    const element = document.getElementById('prevision-printable-area');
+
+    if (!element) return;
+
+    const opt = {
+      margin: 10,
+      filename: `CommonPay_Prevision_Anual_${personaNombre}_${currentAnio}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor:
+          document.documentElement.getAttribute('data-theme') === 'dark' ? '#090d16' : '#f5f7fb'
+      },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
+
+    html2pdf().set(opt).from(element).save();
+  }
+
   // EXPORTAR HISTORIAL A EXCEL (XLSX)
   function exportarExcelHistorial() {
     if (historialTransferencias.length === 0) {
@@ -1646,9 +1804,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function actualizarVistaConciliacion() {
     const fianzaEsp = obtenerFianzaAcumuladaParaMes(currentMonthIndex, currentAnio);
+    const superavitOlga = appConfig.gastosPersonales?.olga?.superavit || 0;
+    const totalEsperado = window.CalculationsModule.calcularDineroEsperadoCuenta(
+      fianzaEsp,
+      superavitOlga
+    );
+
     document.getElementById('con-mes-nombre').innerText =
       `${NOMBRES_MESES[currentMonthIndex]} / ${currentAnio}`;
     document.getElementById('con-fianza-esperada').innerText = `${formatMoneda(fianzaEsp)} €`;
+    if (conSuperavitOlgaEl) {
+      conSuperavitOlgaEl.innerText = `${formatMoneda(superavitOlga)} €`;
+    }
+    if (conTotalEsperadoCuentaEl) {
+      conTotalEsperadoCuentaEl.innerText = `${formatMoneda(totalEsperado)} €`;
+    }
 
     // Limpiar input y resultado previo
     document.getElementById('con-saldo-real').value = '';
@@ -1772,9 +1942,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const fianzaEsp = obtenerFianzaAcumuladaParaMes(currentMonthIndex, currentAnio);
-    const fianzaEspCents = Math.round(fianzaEsp * 100);
+    const superavitOlga = appConfig.gastosPersonales?.olga?.superavit || 0;
+    const totalEsperado = window.CalculationsModule.calcularDineroEsperadoCuenta(
+      fianzaEsp,
+      superavitOlga
+    );
+    const totalEsperadoCents = Math.round(totalEsperado * 100);
     const saldoRealCents = Math.round(saldoRealVal * 100);
-    const diferenciaCents = saldoRealCents - fianzaEspCents;
+    const diferenciaCents = saldoRealCents - totalEsperadoCents;
     const diferencia = diferenciaCents / 100;
 
     const panelResultado = document.getElementById('resultado-conciliacion');
@@ -1793,21 +1968,21 @@ document.addEventListener('DOMContentLoaded', () => {
       titulo = 'Liquidación del día 15: Sobrante Detectado';
       difSimbolo = '+';
       tipo = 'sobrante_retirado';
-      instrucciones = `El saldo en el banco es superior a la fianza acumulada que debe protegerse. <br><br><strong>Pedro debe retirar ${formatMoneda(diferencia)} €</strong> de la cuenta común y transferirlos a su cuenta personal (recaudando a su favor la manutención de Olga y otros sobrantes). Tras este retiro, el saldo de la cuenta común quedará exactamente nivelado con el ahorro de la fianza (<strong>${formatMoneda(fianzaEsp)} €</strong>).`;
+      instrucciones = `El saldo en el banco es superior a los fondos que deben salvaguardarse (Fianza: ${formatMoneda(fianzaEsp)} € + Superávit de Olga: ${formatMoneda(superavitOlga)} € = ${formatMoneda(totalEsperado)} €). <br><br><strong>Pedro debe retirar ${formatMoneda(diferencia)} €</strong> de la cuenta común y transferirlos a su cuenta personal. Tras este retiro, el saldo de la cuenta común quedará exactamente nivelado protegiendo la fianza y el superávit de Olga (<strong>${formatMoneda(totalEsperado)} €</strong>).`;
     } else if (diferencia < 0) {
       cardClass = 'deficit';
       iconName = 'alert-triangle';
       titulo = 'Liquidación del día 15: Déficit Detectado';
       difSimbolo = '';
       tipo = 'deficit_repuesto';
-      instrucciones = `El saldo en el banco está por debajo del ahorro de la fianza comprometido. <br><br><strong>Pedro debe aportar ${formatMoneda(Math.abs(diferencia))} €</strong> de su propio dinero particular a la cuenta común para reponer la fianza. Tras este ingreso, el saldo de la cuenta común volverá a garantizar el fondo de la fianza (<strong>${formatMoneda(fianzaEsp)} €</strong>).`;
+      instrucciones = `El saldo en el banco está por debajo de los fondos protegidos que deben permanecer en cuenta (Fianza: ${formatMoneda(fianzaEsp)} € + Superávit Olga: ${formatMoneda(superavitOlga)} € = ${formatMoneda(totalEsperado)} €). <br><br><strong>Pedro debe aportar ${formatMoneda(Math.abs(diferencia))} €</strong> a la cuenta común para cubrir el déficit y garantizar la fianza y el superávit de Olga (<strong>${formatMoneda(totalEsperado)} €</strong>).`;
     } else {
       cardClass = 'equilibrado';
       iconName = 'scale';
       titulo = 'Liquidación del día 15: Cuenta Equilibrada';
       difSimbolo = '';
       tipo = 'equilibrado';
-      instrucciones = `El saldo bancario actual coincide exactamente con el ahorro de la fianza acumulada de <strong>${formatMoneda(fianzaEsp)} €</strong>. No hay acciones de liquidación pendientes para Pedro.`;
+      instrucciones = `El saldo bancario actual coincide exactamente con el total que debe haber en cuenta (Fianza: ${formatMoneda(fianzaEsp)} € + Superávit Olga: ${formatMoneda(superavitOlga)} € = <strong>${formatMoneda(totalEsperado)} €</strong>). No hay acciones de liquidación pendientes para Pedro.`;
     }
 
     panelResultado.className = `glass-card balance-card ${cardClass}`;
@@ -1937,7 +2112,7 @@ document.addEventListener('DOMContentLoaded', () => {
    */
   function exportarCalendarioIcs() {
     const alertas = appConfig.alertas || {
-      mesHipoteca: 8,
+      mesHipoteca: 9,
       mesManutencion: 5,
       mesAlquiler: 10
     };
@@ -1995,7 +2170,7 @@ document.addEventListener('DOMContentLoaded', () => {
     );
 
     // 4. Revisión Hipoteca Variable (evento puntual el día 1 del mes configurado)
-    const mesHip = parseInt(alertas.mesHipoteca ?? 8);
+    const mesHip = parseInt(alertas.mesHipoteca ?? 9);
     eventos.push(
       vevent({
         uid: uid(),

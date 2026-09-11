@@ -443,6 +443,151 @@ input:checked + .slider:before {
   -webkit-text-fill-color: var(--text-main);
 }
 
+/* Caja de Superávit de Olga */
+.superavit-box-olga {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s ease;
+}
+
+.superavit-box-olga:hover {
+  border-color: rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
+}
+
+.superavit-box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.superavit-box-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.superavit-box-title i {
+  color: var(--primary);
+}
+
+.superavit-box-badge {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  letter-spacing: -0.2px;
+}
+
+.superavit-box-badge.neutral {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-muted);
+  border-color: var(--border-color);
+}
+
+.superavit-box-badge.negative {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.superavit-box-detail {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Tarjeta de Dinero Esperado en Cuenta */
+.saldo-esperado-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+  padding: 1.15rem 1.5rem;
+  border-left: 5px solid #10b981;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s ease;
+}
+
+.saldo-esperado-card:hover {
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.08);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.saldo-esperado-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.saldo-esperado-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.saldo-esperado-icon i {
+  width: 22px;
+  height: 22px;
+}
+
+.saldo-esperado-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+  color: var(--text-main);
+}
+
+.saldo-esperado-subtitle {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.saldo-esperado-right {
+  text-align: right;
+}
+
+.saldo-esperado-monto {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.95rem;
+  font-weight: 800;
+  color: #10b981;
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0.25rem;
+}
+
+.saldo-esperado-desglose {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
 /* Detalle de conceptos */
 .conceptos-list {
   display: flex;

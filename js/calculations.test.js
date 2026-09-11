@@ -15,6 +15,8 @@ describe('Cálculos Financieros (calculations.js)', () => {
     expect(CalculationsModule).toBeDefined();
     expect(CalculationsModule.round).toBeTypeOf('function');
     expect(CalculationsModule.calcularDesgloseMes).toBeTypeOf('function');
+    expect(CalculationsModule.calcularSuperavit).toBeTypeOf('function');
+    expect(CalculationsModule.calcularDineroEsperadoCuenta).toBeTypeOf('function');
   });
 
   describe('Función round()', () => {
@@ -161,6 +163,34 @@ describe('Cálculos Financieros (calculations.js)', () => {
       expect(resultadoNoviembre.hipotecaNeta).toBe(208.61);
       // Individual = round(208.61 / 2) = 104.31
       expect(resultadoNoviembre.resumenComun.hipotecaNetaIndividual).toBe(104.31);
+    });
+  });
+
+  describe('Función calcularSuperavit()', () => {
+    it('debe calcular correctamente el superávit cuando el ingreso es superior a la cuota', () => {
+      const { calcularSuperavit } = CalculationsModule;
+      // Caso Olga: Ingreso habitual 550€, Cuota con IPC 538.21€ -> Superávit = +11.79€
+      expect(calcularSuperavit(550.0, 538.21)).toBe(11.79);
+      // Caso Mayo sin IPC: Ingreso 550€, Cuota 534.42€ -> Superávit = +15.58€
+      expect(calcularSuperavit(550.0, 534.42)).toBe(15.58);
+    });
+
+    it('debe devolver valor negativo o cero cuando no hay superávit con precisión centesimal', () => {
+      const { calcularSuperavit } = CalculationsModule;
+      expect(calcularSuperavit(550.0, 585.53)).toBe(-35.53);
+      expect(calcularSuperavit(550.0, 550.0)).toBe(0);
+    });
+  });
+
+  describe('Función calcularDineroEsperadoCuenta()', () => {
+    it('debe sumar exactamente la fianza repuesta y el superávit de Olga sin errores de flotante', () => {
+      const { calcularDineroEsperadoCuenta } = CalculationsModule;
+      // Ej: Fianza 450.00€ + Superávit Olga 115.57€ = 565.57€
+      expect(calcularDineroEsperadoCuenta(450.0, 115.57)).toBe(565.57);
+      // Ej: Fianza 180.00€ + Superávit Olga 62.75€ = 242.75€
+      expect(calcularDineroEsperadoCuenta(180.0, 62.75)).toBe(242.75);
+      // Ej: Fianza 0€ + Superávit Olga 115.57€ = 115.57€
+      expect(calcularDineroEsperadoCuenta(0.0, 115.57)).toBe(115.57);
     });
   });
 });

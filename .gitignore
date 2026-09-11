@@ -36,6 +36,6 @@ yarn-error.log*
 # Node / Vite / Desarrollo
 node_modules/
 dist/
-.eslintcache
-.temp/
-.vitest/
+# Archivos locales de datos/extractos bancarios
+*.xls
+*.xlsx

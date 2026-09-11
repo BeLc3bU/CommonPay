@@ -18,7 +18,9 @@ const DEFAULT_CONFIG = {
   gastosPersonales: {
     olga: {
       coche: 188.02,
-      manutencion: 189.3
+      manutencion: 189.3,
+      superavit: 115.57,
+      ingresoHabitual: 550.0
     },
     pedro: {}
   },
@@ -42,12 +44,12 @@ const DEFAULT_CONFIG = {
     aportacionMensualPersona: 10.0
   },
   alertas: {
-    mesHipoteca: 8, // Septiembre
+    mesHipoteca: 9, // Octubre (sube el mes que viene)
     mesManutencion: 5, // Junio
     mesAlquiler: 10, // Noviembre
     tasaManutencion: 2.0, // 2% IPC
     tasaAlquiler: 2.0, // 2% IRAV
-    cuotaHipotecaNueva: 716.81 // Sin variación por defecto
+    cuotaHipotecaNueva: 777.37 // Sube a 777.37 € a partir de Octubre
   }
 };
 
@@ -151,6 +153,33 @@ function mapearADb(jsRow) {
 
 // --- FUNCIONES DE ALMACENAMIENTO DE DATOS ---
 
+function normalizarConfiguracion(cfg) {
+  if (!cfg) cfg = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  if (!cfg.gastosPersonales) cfg.gastosPersonales = {};
+  if (!cfg.gastosPersonales.olga) cfg.gastosPersonales.olga = {};
+  if (
+    cfg.gastosPersonales.olga.superavit === undefined ||
+    cfg.gastosPersonales.olga.superavit === 0.0 ||
+    cfg.gastosPersonales.olga.superavit === 62.75
+  ) {
+    cfg.gastosPersonales.olga.superavit = 115.57;
+  }
+  if (cfg.gastosPersonales.olga.ingresoHabitual === undefined) {
+    cfg.gastosPersonales.olga.ingresoHabitual = 550.0;
+  }
+  if (!cfg.alertas) cfg.alertas = JSON.parse(JSON.stringify(DEFAULT_CONFIG.alertas));
+  if (
+    cfg.alertas.cuotaHipotecaNueva === undefined ||
+    cfg.alertas.cuotaHipotecaNueva === 716.81
+  ) {
+    cfg.alertas.cuotaHipotecaNueva = 777.37;
+  }
+  if (cfg.alertas.mesHipoteca === undefined || cfg.alertas.mesHipoteca === 8) {
+    cfg.alertas.mesHipoteca = 9;
+  }
+  return cfg;
+}
+
 /**
  * Carga la configuración desde la nube (Supabase) o LocalStorage.
  */
@@ -166,14 +195,14 @@ async function getConfiguration() {
       if (error) throw error;
 
       if (data && data.data) {
-        return data.data;
+        return normalizarConfiguracion(data.data);
       } else {
         // Si no hay configuración remota creada, guardar la por defecto (si somos editores)
         const user = await obtenerUsuarioActivo();
         if (user) {
           await saveConfiguration(DEFAULT_CONFIG);
         }
-        return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        return normalizarConfiguracion(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
       }
     } catch (err) {
       console.error('Error al obtener configuración de Supabase. Leyendo LocalStorage:', err);
@@ -184,12 +213,12 @@ async function getConfiguration() {
   const data = localStorage.getItem(CONFIG_KEY);
   if (!data) {
     localStorage.setItem(CONFIG_KEY, JSON.stringify(DEFAULT_CONFIG));
-    return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    return normalizarConfiguracion(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
   }
   try {
-    return JSON.parse(data);
+    return normalizarConfiguracion(JSON.parse(data));
   } catch (_e) {
-    return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    return normalizarConfiguracion(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
   }
 }
 
@@ -257,12 +286,12 @@ async function getFianzaAcumulado() {
 
   // Fallback LocalStorage
   const data = localStorage.getItem(FIANZA_ACUMULADO_KEY);
-  if (data === null) {
-    localStorage.setItem(FIANZA_ACUMULADO_KEY, '0');
-    return 0.0;
+  if (data === null || parseFloat(data) === 0.0) {
+    localStorage.setItem(FIANZA_ACUMULADO_KEY, '410.00');
+    return 410.0;
   }
   const valor = parseFloat(data);
-  return isNaN(valor) ? 0.0 : valor;
+  return isNaN(valor) ? 410.0 : valor;
 }
 
 /**
