@@ -81,6 +81,7 @@ describe('Cálculos Financieros (calculations.js)', () => {
 
       // Hipoteca Neta = 716.81 - 462.00 = 254.81
       expect(resultado.hipotecaNeta).toBe(254.81);
+      expect(resultado.ingresoAlquiler).toBe(462.0);
 
       // Resumen Comunes Individuales
       // Hipoteca Neta Individual = round(254.81 / 2) = 127.41 (en centavos: round(25481 / 2) = 12741)
@@ -161,6 +162,7 @@ describe('Cálculos Financieros (calculations.js)', () => {
       const resultadoNoviembre = calcularDesgloseMes(10, configModificada);
       // Hipoteca = 716.81. Alquiler nuevo = 508.20. Hipoteca neta = 716.81 - 508.20 = 208.61.
       expect(resultadoNoviembre.hipotecaNeta).toBe(208.61);
+      expect(resultadoNoviembre.ingresoAlquiler).toBe(508.2);
       // Individual = round(208.61 / 2) = 104.31
       expect(resultadoNoviembre.resumenComun.hipotecaNetaIndividual).toBe(104.31);
     });

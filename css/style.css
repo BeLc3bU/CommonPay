@@ -342,9 +342,18 @@ input:checked + .slider:before {
 /* --- CARDS DE GASTOS --- */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 2rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
   margin-bottom: 2.5rem;
+}
+
+@media (max-width: 1080px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .person-card.inquilinos {
+    grid-column: span 2;
+  }
 }
 
 .person-card {
@@ -366,6 +375,10 @@ input:checked + .slider:before {
 
 .person-card.pedro::before {
   background: var(--secondary-gradient);
+}
+
+.person-card.inquilinos::before {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 }
 
 .person-header {
@@ -396,6 +409,11 @@ input:checked + .slider:before {
 .pedro-avatar {
   background: var(--secondary-gradient);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.inquilinos-avatar {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .person-name-wrapper {
@@ -432,6 +450,13 @@ input:checked + .slider:before {
 
 .monto-transferencia.pedro-color {
   background: var(--secondary-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.monto-transferencia.inquilinos-color {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -504,6 +529,67 @@ input:checked + .slider:before {
 }
 
 .superavit-box-detail {
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Caja de Información de Inquilinos */
+.inquilinos-info-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s ease;
+}
+
+.inquilinos-info-box:hover {
+  border-color: rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.08);
+}
+
+.inquilinos-info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inquilinos-info-title {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.inquilinos-info-title i {
+  color: #10b981;
+}
+
+.inquilinos-badge {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  background: rgba(16, 185, 129, 0.12);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  letter-spacing: -0.2px;
+}
+
+.inquilinos-badge.alert {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.inquilinos-info-detail {
   margin-top: 0.4rem;
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -640,6 +726,11 @@ input:checked + .slider:before {
 .concepto-tag.extraordinario {
   background-color: var(--warning-light);
   color: #d97706;
+}
+
+.concepto-tag.alquiler {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #10b981;
 }
 
 .concepto-value {

@@ -141,6 +141,8 @@ function calcularDesgloseMes(mesIndex, config) {
 
   return {
     hipotecaNeta: toEuros(hipotecaNetaCents),
+    cuotaHipotecaBase: toEuros(cuotaHipotecaCents),
+    ingresoAlquiler: toEuros(ingresoAlquilerCents),
     desgloseOlga: {
       conceptos: conceptosOlga,
       total: toEuros(totalOlgaCents)

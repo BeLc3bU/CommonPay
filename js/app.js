@@ -37,6 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const totalPedroEl = document.getElementById('total-pedro');
   const conceptosOlgaEl = document.getElementById('conceptos-olga');
   const conceptosPedroEl = document.getElementById('conceptos-pedro');
+  const totalInquilinosEl = document.getElementById('total-inquilinos');
+  const conceptosInquilinosEl = document.getElementById('conceptos-inquilinos');
+  const inquilinosBadgeEl = document.getElementById('inquilinos-badge');
+  const inquilinosDetailEl = document.getElementById('inquilinos-detail');
   const olgaSuperavitBadge = document.getElementById('olga-superavit-badge');
   const olgaSuperavitDetail = document.getElementById('olga-superavit-detail');
   const btnCompletarMes = document.getElementById('btn-completar-mes');
@@ -776,6 +780,51 @@ document.addEventListener('DOMContentLoaded', () => {
     // Renderizar conceptos Pedro
     renderizarConceptos(conceptosPedroEl, desglose.desglosePedro.conceptos);
 
+    // Formatear montos y conceptos Inquilinos
+    if (totalInquilinosEl) {
+      totalInquilinosEl.innerHTML = `${formatMoneda(desglose.ingresoAlquiler)} <span class="monto-currency">€</span>`;
+    }
+
+    if (conceptosInquilinosEl) {
+      const conceptosInquilinos = [
+        {
+          nombre: 'Cuota Alquiler Mensual',
+          tipo: 'alquiler',
+          valor: desglose.ingresoAlquiler
+        },
+        {
+          nombre: 'Aportación a Hipoteca',
+          tipo: 'comun',
+          valor: desglose.ingresoAlquiler
+        }
+      ];
+      renderizarConceptos(conceptosInquilinosEl, conceptosInquilinos);
+    }
+
+    const mesAlquiler = parseInt(appConfig.alertas?.mesAlquiler ?? 10);
+    const tasaAlquiler = parseFloat(appConfig.alertas?.tasaAlquiler ?? 2.0);
+    if (inquilinosBadgeEl) {
+      if (currentMonthIndex === mesAlquiler) {
+        inquilinosBadgeEl.className = 'inquilinos-badge alert';
+        inquilinosBadgeEl.innerHTML = `<i data-lucide="trending-up" style="width:12px;height:12px;display:inline;vertical-align:middle;margin-right:2px;"></i> Revisión IRAV (+${tasaAlquiler}%)`;
+      } else if (currentMonthIndex > mesAlquiler) {
+        inquilinosBadgeEl.className = 'inquilinos-badge';
+        inquilinosBadgeEl.textContent = `Actualizado IRAV (+${tasaAlquiler}%)`;
+      } else {
+        inquilinosBadgeEl.className = 'inquilinos-badge';
+        inquilinosBadgeEl.textContent = 'Día 15';
+      }
+    }
+
+    if (inquilinosDetailEl) {
+      if (currentMonthIndex >= mesAlquiler) {
+        inquilinosDetailEl.innerHTML = `Cuota con subida IRAV (+${tasaAlquiler}%). Aportación a cuenta el día 15 para amortizar hipoteca.`;
+      } else {
+        inquilinosDetailEl.innerHTML =
+          'Ingreso directo a cuenta común el día 15 para amortizar la hipoteca.';
+      }
+    }
+
     // Renderizar Superávit de Olga
     const superavitAcumulado = appConfig.gastosPersonales?.olga?.superavit || 0;
     const ingresoHabitual =
@@ -851,6 +900,8 @@ document.addEventListener('DOMContentLoaded', () => {
         iconName = 'piggy-bank';
       } else if (c.tipo === 'extraordinario') {
         iconName = 'sparkles';
+      } else if (c.tipo === 'alquiler') {
+        iconName = 'key';
       }
 
       item.innerHTML = `
@@ -1900,16 +1951,16 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:24px;">
         <!-- Tarjeta Olga -->
-        <div style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;padding:20px;">
+        <div style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;padding:18px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <strong style="font-size:18px;color:#4f46e5;">Olga</strong>
-            <span style="font-size:22px;font-weight:800;color:#4f46e5;">${formatMoneda(desglose.desgloseOlga.total)} €</span>
+            <strong style="font-size:17px;color:#4f46e5;">Olga</strong>
+            <span style="font-size:20px;font-weight:800;color:#4f46e5;">${formatMoneda(desglose.desgloseOlga.total)} €</span>
           </div>
           <div style="border-top:1px dashed #cbd5e1;padding-top:12px;">
             ${desglose.desgloseOlga.conceptos.map(c => `
-              <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #f1f5f9;">
+              <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;border-bottom:1px solid #f1f5f9;">
                 <span style="color:#64748b;">${c.nombre}</span>
                 <strong style="color:#1e293b;">${formatMoneda(c.valor)} €</strong>
               </div>
@@ -1918,18 +1969,39 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
 
         <!-- Tarjeta Pedro -->
-        <div style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;padding:20px;">
+        <div style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;padding:18px;">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <strong style="font-size:18px;color:#2563eb;">Pedro</strong>
-            <span style="font-size:22px;font-weight:800;color:#2563eb;">${formatMoneda(desglose.desglosePedro.total)} €</span>
+            <strong style="font-size:17px;color:#2563eb;">Pedro</strong>
+            <span style="font-size:20px;font-weight:800;color:#2563eb;">${formatMoneda(desglose.desglosePedro.total)} €</span>
           </div>
           <div style="border-top:1px dashed #cbd5e1;padding-top:12px;">
             ${desglose.desglosePedro.conceptos.map(c => `
-              <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px solid #f1f5f9;">
+              <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;border-bottom:1px solid #f1f5f9;">
                 <span style="color:#64748b;">${c.nombre}</span>
                 <strong style="color:#1e293b;">${formatMoneda(c.valor)} €</strong>
               </div>
             `).join('')}
+          </div>
+        </div>
+
+        <!-- Tarjeta Inquilinos -->
+        <div style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:12px;padding:18px;border-top:4px solid #10b981;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <strong style="font-size:17px;color:#10b981;">Inquilinos</strong>
+            <span style="font-size:20px;font-weight:800;color:#10b981;">${formatMoneda(desglose.ingresoAlquiler)} €</span>
+          </div>
+          <div style="border-top:1px dashed #cbd5e1;padding-top:12px;">
+            <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;border-bottom:1px solid #f1f5f9;">
+              <span style="color:#64748b;">Cuota Alquiler (Día 15)</span>
+              <strong style="color:#1e293b;">${formatMoneda(desglose.ingresoAlquiler)} €</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;border-bottom:1px solid #f1f5f9;">
+              <span style="color:#64748b;">Compensación Hipoteca</span>
+              <strong style="color:#10b981;">-${formatMoneda(desglose.ingresoAlquiler)} €</strong>
+            </div>
+            <div style="margin-top:8px;font-size:11px;color:#64748b;line-height:1.4;">
+              ${currentMonthIndex >= parseInt(appConfig.alertas?.mesAlquiler ?? 10) ? 'Actualizado con incremento IRAV.' : 'Cobro mensual el día 15.'}
+            </div>
           </div>
         </div>
       </div>
