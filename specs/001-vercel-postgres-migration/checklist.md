@@ -27,4 +27,4 @@
 - [x] `npm run lint` ejecutado con 0 errores.
 - [x] `npm run test` ejecutado con 16/16 tests pasados.
 - [x] `npm run build` ejecutado exitosamente con Vite.
-- [ ] Git commit y push a la rama `main` de GitHub.
+- [x] Git commit y push a la rama `main` de GitHub.

@@ -13,4 +13,4 @@
 - [x] **TASK-04:** Adaptar `js/storage.js` para consumir `/api/data` y `/api/auth`, manteniendo la API pública y el fallback a `LocalStorage`.
 - [x] **TASK-05:** Actualizar `index.html` retirando el script CDN de Supabase y eliminar `api/ping.js` y el cron en `vercel.json`.
 - [x] **TASK-06:** Ejecutar suite de pruebas unitarias (`npm run test`), linter (`npm run lint`) y build (`npm run build`).
-- [ ] **TASK-07:** Realizar commit y push de la migración a GitHub para despliegue automático en Vercel.
+- [x] **TASK-07:** Realizar commit y push de la migración a GitHub para despliegue automático en Vercel.
