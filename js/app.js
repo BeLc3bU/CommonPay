@@ -1662,6 +1662,21 @@ document.addEventListener('DOMContentLoaded', () => {
       totalPersonal += coche + manutencion;
       totalExtra += extraordinarios;
 
+      // Identificación de gastos extraordinarios
+      let nombreBadgeExtra = '';
+      let claseBadgeExtra = '';
+      if (m === 0 || m === 1 || m === 2) {
+        nombreBadgeExtra = 'IBI';
+        claseBadgeExtra = 'ibi';
+      } else if (m === 3) {
+        nombreBadgeExtra = 'Seguro de Casa';
+        claseBadgeExtra = 'seguro';
+      } else if (extraordinarios > 0) {
+        const extraConcepto = conceptos.find((c) => c.tipo === 'extraordinario');
+        nombreBadgeExtra = extraConcepto ? extraConcepto.nombre : 'Extra';
+        claseBadgeExtra = 'extra';
+      }
+
       // Indicadores de meses especiales
       let badges = '';
       if (m === parseInt(alertas.mesHipoteca))
@@ -1682,6 +1697,15 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `<td style="text-align:right;">${formatMoneda(manutencion)} €</td>`
         : '';
 
+      const tdExtraordinarios = extraordinarios > 0
+        ? `<td style="text-align:right;">
+            <div class="prevision-extra-cell">
+              <span class="prevision-badge ${claseBadgeExtra}">${nombreBadgeExtra}</span>
+              <span class="prevision-extra-amount">${formatMoneda(extraordinarios)} €</span>
+            </div>
+          </td>`
+        : '<td style="text-align:right;"><span style="color:var(--text-muted)">—</span></td>';
+
       // 1. Fila de la tabla (Desktop y modo Tabla)
       const row = document.createElement('tr');
       if (esMesActual) row.classList.add('prevision-row-actual');
@@ -1693,7 +1717,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td style="text-align:right;">${formatMoneda(fianza)} €</td>
         ${tdCoche}
         ${tdManutencion}
-        <td style="text-align:right;">${extraordinarios > 0 ? formatMoneda(extraordinarios) + ' €' : '<span style="color:var(--text-muted)">—</span>'}</td>
+        ${tdExtraordinarios}
         <td style="${tdTotalStyle}">${formatMoneda(total)} €</td>
       `;
       tbody.appendChild(row);
@@ -1740,7 +1764,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 : ''
             }
             <div class="prevision-concept-chip ${extraordinarios > 0 ? 'highlight-extra' : ''}">
-              <span class="chip-label">Extraordinarios</span>
+              <span class="chip-label">
+                Extraordinarios
+                ${claseBadgeExtra ? `<span class="prevision-badge ${claseBadgeExtra}" style="margin: 0 0 0 4px; font-size: 0.62rem; vertical-align: middle;">${nombreBadgeExtra}</span>` : ''}
+              </span>
               <span class="chip-val">${extraordinarios > 0 ? formatMoneda(extraordinarios) + ' €' : '—'}</span>
             </div>
           </div>
@@ -2057,6 +2084,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const tdCoche = esOlga ? `<td style="text-align:right;padding:8px 10px;">${formatMoneda(coche)} €</td>` : '';
       const tdManutencion = esOlga ? `<td style="text-align:right;padding:8px 10px;">${formatMoneda(manutencion)} €</td>` : '';
 
+      let nombreBadgeExtra = '';
+      let badgeExtraPDF = '';
+      if (m === 0 || m === 1 || m === 2) {
+        nombreBadgeExtra = 'IBI';
+        badgeExtraPDF = '<span style="font-size:8.5px;padding:1px 4px;border-radius:3px;font-weight:700;margin-right:4px;background:#fef3c7;color:#b45309;border:1px solid #fde68a;">IBI</span>';
+      } else if (m === 3) {
+        nombreBadgeExtra = 'Seguro de Casa';
+        badgeExtraPDF = '<span style="font-size:8.5px;padding:1px 4px;border-radius:3px;font-weight:700;margin-right:4px;background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;">Seguro de Casa</span>';
+      } else if (extraordinarios > 0) {
+        const extraConcepto = conceptos.find((c) => c.tipo === 'extraordinario');
+        nombreBadgeExtra = extraConcepto ? extraConcepto.nombre : 'Extra';
+        badgeExtraPDF = `<span style="font-size:8.5px;padding:1px 4px;border-radius:3px;font-weight:700;margin-right:4px;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;">${nombreBadgeExtra}</span>`;
+      }
+
       filasHTML += `
         <tr style="border-bottom:1px solid #e2e8f0;background:${m % 2 === 0 ? '#ffffff' : '#f8fafc'};">
           <td style="padding:8px 10px;font-weight:600;">${NOMBRES_MESES[m]}</td>
@@ -2065,7 +2106,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td style="text-align:right;padding:8px 10px;">${formatMoneda(fianza)} €</td>
           ${tdCoche}
           ${tdManutencion}
-          <td style="text-align:right;padding:8px 10px;">${extraordinarios > 0 ? formatMoneda(extraordinarios) + ' €' : '—'}</td>
+          <td style="text-align:right;padding:8px 10px;">${extraordinarios > 0 ? badgeExtraPDF + formatMoneda(extraordinarios) + ' €' : '—'}</td>
           <td style="text-align:right;padding:8px 10px;font-weight:700;color:${colorHex};">${formatMoneda(total)} €</td>
         </tr>
       `;

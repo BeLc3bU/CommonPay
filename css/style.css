@@ -1804,6 +1804,43 @@ tr:hover td {
   color: var(--success);
 }
 
+.prevision-badge.ibi {
+  background-color: var(--warning-light);
+  color: #d97706;
+}
+
+.prevision-badge.seguro {
+  background-color: rgba(99, 102, 241, 0.15);
+  color: #4f46e5;
+}
+
+.prevision-badge.extra {
+  background-color: rgba(148, 163, 184, 0.15);
+  color: var(--text-muted);
+}
+
+[data-theme='dark'] .prevision-badge.ibi {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+[data-theme='dark'] .prevision-badge.seguro {
+  background-color: rgba(129, 140, 248, 0.15);
+  color: #818cf8;
+}
+
+.prevision-extra-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.prevision-extra-amount {
+  font-weight: 500;
+}
+
 /* --- Conmutador de vistas en Móvil (Tarjetas vs Tabla) --- */
 .mobile-only {
   display: none !important;
