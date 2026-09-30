@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectorMesGlobal = document.getElementById('selector-mes-global');
   const selectorMesGlobalMobile = document.getElementById('selector-mes-global-mobile');
   const monthSelectorContainer = document.getElementById('month-selector-container');
+  const mobileMonthSelectorContainer = document.getElementById('mobile-month-selector-container');
   const themeCheckbox = document.getElementById('theme-checkbox');
 
   // Sidebar / Drawer móvil
@@ -412,8 +413,8 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const targetView = link.getAttribute('data-target');
         cambiarVista(targetView, link);
-        // Cerrar drawer en móvil al navegar
-        if (sidebar && window.innerWidth <= 768) {
+        // Cerrar drawer en móvil o tablet al navegar
+        if (sidebar && window.innerWidth <= 1024) {
           sidebar.classList.remove('open');
           sidebarOverlay.classList.remove('active');
           document.body.style.overflow = '';
@@ -711,43 +712,44 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Adaptar cabecera y selector de mes según la sección
+    const mostrarSelectorMes = viewId === 'dashboard-view' || viewId === 'conciliacion-view';
+    if (monthSelectorContainer) {
+      monthSelectorContainer.style.display = mostrarSelectorMes ? 'flex' : 'none';
+    }
+    if (mobileMonthSelectorContainer) {
+      mobileMonthSelectorContainer.style.display = mostrarSelectorMes ? 'flex' : 'none';
+    }
+
     if (viewId === 'dashboard-view') {
       pageTitle.innerText = 'Mes Actual';
       pageSubtitle.innerText = 'Calcula las transferencias del mes e incrementa tus ahorros.';
-      monthSelectorContainer.style.display = 'flex';
       actualizarDashboardMes();
     } else if (viewId === 'fianza-view') {
       pageTitle.innerText = 'Fondo de Fianza';
       pageSubtitle.innerText = 'Monitorea el progreso de reposición y añade ahorros adicionales.';
-      monthSelectorContainer.style.display = 'none';
       actualizarVistaFianza();
     } else if (viewId === 'stats-view') {
       pageTitle.innerText = 'Estadísticas Anuales';
       pageSubtitle.innerText = 'Previsión y desglose anual de los gastos del hogar.';
-      monthSelectorContainer.style.display = 'none';
       renderizarGraficoAnual();
       actualizarEstadisticasResumen();
     } else if (viewId === 'historial-view') {
       pageTitle.innerText = 'Historial';
       pageSubtitle.innerText = 'Revisa los registros guardados de las transferencias realizadas.';
-      monthSelectorContainer.style.display = 'none';
       actualizarVistaHistorial();
     } else if (viewId === 'config-view') {
       pageTitle.innerText = 'Configuración';
       pageSubtitle.innerText = 'Edita los importes y gastos del sistema sin tocar código.';
-      monthSelectorContainer.style.display = 'none';
       cargarInputsConfiguracion();
     } else if (viewId === 'conciliacion-view') {
       pageTitle.innerText = 'Liquidación y Conciliación';
       pageSubtitle.innerText =
         'Controla el saldo del día 15, salvaguarda la fianza y liquida diferencias.';
-      monthSelectorContainer.style.display = 'flex';
       actualizarVistaConciliacion();
     } else if (viewId === 'prevision-view') {
       pageTitle.innerText = 'Previsión Anual';
       pageSubtitle.innerText =
         'Consulta el calendario de aportaciones previstas mes a mes para cada persona.';
-      monthSelectorContainer.style.display = 'none';
       actualizarVistaPrevision();
     }
 
