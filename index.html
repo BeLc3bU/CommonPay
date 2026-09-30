@@ -346,6 +346,31 @@
               </p>
             </div>
             <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap">
+              <div
+                class="input-inline-wrapper"
+                style="display: flex; align-items: center; gap: 0.5rem"
+              >
+                <label
+                  for="input-ingreso-olga"
+                  style="
+                    font-size: 0.9rem;
+                    font-weight: 500;
+                    color: var(--text-main);
+                    white-space: nowrap;
+                  "
+                >
+                  Ingreso Olga (€):
+                </label>
+                <input
+                  type="number"
+                  id="input-ingreso-olga"
+                  class="input-control"
+                  step="0.01"
+                  min="0"
+                  placeholder="550.00"
+                  style="width: 110px; text-align: right; font-weight: 600"
+                />
+              </div>
               <button class="btn btn-secondary" id="btn-exportar-pdf-mes">
                 <i data-lucide="file-text"></i> PDF
               </button>

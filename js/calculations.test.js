@@ -175,12 +175,18 @@ describe('Cálculos Financieros (calculations.js)', () => {
       expect(calcularSuperavit(550.0, 538.21)).toBe(11.79);
       // Caso Mayo sin IPC: Ingreso 550€, Cuota 534.42€ -> Superávit = +15.58€
       expect(calcularSuperavit(550.0, 534.42)).toBe(15.58);
+      // Caso con ingreso variable mayor: 600€ vs 434.43€ -> Superávit = +165.57€
+      expect(calcularSuperavit(600.0, 434.43)).toBe(165.57);
     });
 
     it('debe devolver valor negativo o cero cuando no hay superávit con precisión centesimal', () => {
       const { calcularSuperavit } = CalculationsModule;
       expect(calcularSuperavit(550.0, 585.53)).toBe(-35.53);
       expect(calcularSuperavit(550.0, 550.0)).toBe(0);
+      // Caso con ingreso variable menor (déficit): 400€ vs 434.43€ -> Déficit = -34.43€
+      expect(calcularSuperavit(400.0, 434.43)).toBe(-34.43);
+      // Caso con decimales irregulares: 523.47€ vs 538.21€ -> Déficit = -14.74€
+      expect(calcularSuperavit(523.47, 538.21)).toBe(-14.74);
     });
   });
 

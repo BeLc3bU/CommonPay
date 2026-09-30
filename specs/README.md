@@ -4,17 +4,13 @@ Este directorio centraliza todas las especificaciones, planes técnicos, tareas 
 
 ---
 
-## 📌 Especificaciones Implementadas ✅
-1. **[000 · CommonPay Core](./000-commonpay-core/spec.md)**
+## 📌 Especificaciones Activas e Implementadas
+1. **[000 · CommonPay Core](./000-commonpay-core/spec.md)** ✅
    - Motor financiero de cálculo, redondeo centesimal exacto, gráficos anuales (Chart.js), persistencia en `LocalStorage` y exportaciones (PDF/XLSX).
-2. **[001 · Migración de Persistencia a Vercel Postgres](./001-vercel-postgres-migration/spec.md)**
+2. **[001 · Migración de Persistencia a Vercel Postgres](./001-vercel-postgres-migration/spec.md)** ✅
    - Migración desde Supabase a Vercel Postgres (Serverless Neon) para eliminar pausas por inactividad, con autenticación serverless y persistencia híbrida.
-3. **002 · Liquidación y Conciliación Día 15**
-   - Módulo de conciliación bancaria para calcular sobrantes y déficits respecto al ahorro de fianza acumulado.
-4. **003 · Alertas Contractuales y iCalendar**
-   - Descarga de eventos `.ics` de recordatorios domésticos y regularizaciones por IPC/IRAV.
-5. **004 · Previsión Anual Interactiva**
-   - Vista dedicada con tabla mensual interactiva de los 12 meses del año para Olga y Pedro con tarjetas resumen y badges estacionales.
+3. **[002 · Input de Transferencia Real de Olga y Cálculo Dinámico](./002-input-transferencia-olga/spec.md)** ✅
+   - Entrada editable del importe real transferido por Olga cada mes con cálculo en vivo de superávit/déficit y registro exacto en el historial.
 
 ---
 

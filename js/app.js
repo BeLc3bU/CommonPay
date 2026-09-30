@@ -45,6 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const olgaSuperavitBadge = document.getElementById('olga-superavit-badge');
   const olgaSuperavitDetail = document.getElementById('olga-superavit-detail');
   const btnCompletarMes = document.getElementById('btn-completar-mes');
+  const inputIngresoOlga = document.getElementById('input-ingreso-olga');
   const btnExportarPdfMes = document.getElementById('btn-exportar-pdf-mes');
   const btnExportarPdfPrevision = document.getElementById('btn-exportar-pdf-prevision');
   const dineroEsperadoCuentaEl = document.getElementById('dinero-esperado-cuenta');
@@ -375,6 +376,20 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
 
+    // Controlar input de ingreso de Olga
+    if (inputIngresoOlga) {
+      const yaRegistrado = historialTransferencias.some(
+        (t) => t.mesIndex === currentMonthIndex && t.anio === currentAnio
+      );
+      if (yaRegistrado || !isEditor) {
+        inputIngresoOlga.disabled = true;
+        inputIngresoOlga.classList.add('read-only-disabled');
+      } else {
+        inputIngresoOlga.disabled = false;
+        inputIngresoOlga.classList.remove('read-only-disabled');
+      }
+    }
+
     // Habilitar o deshabilitar botones
     botonesEdicion.forEach((btn) => {
       if (btn) {
@@ -462,6 +477,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Acción completar mes
     btnCompletarMes.addEventListener('click', completarMesActual);
+
+    // Input dinámico de ingreso transferido por Olga
+    if (inputIngresoOlga) {
+      inputIngresoOlga.addEventListener('input', actualizarCalculoSuperavitOlga);
+    }
 
     // Exportación a PDF del desglose mensual
     btnExportarPdfMes.addEventListener('click', exportarPdfMes);
@@ -827,14 +847,54 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
+    // Verificar si el mes actual está marcado como completado en el historial
+    const registroMes = historialTransferencias.find(
+      (t) => t.mesIndex === currentMonthIndex && t.anio === currentAnio
+    );
+    const yaRegistrado = !!registroMes;
+
+    // Configurar input de ingreso de Olga
+    let ingresoOlgaMes;
+    if (yaRegistrado) {
+      ingresoOlgaMes =
+        registroMes.transferenciaOlga !== undefined
+          ? registroMes.transferenciaOlga
+          : registroMes.desglose?.ingresoRealOlga || 550.0;
+      if (inputIngresoOlga) {
+        inputIngresoOlga.value = ingresoOlgaMes.toFixed(2);
+        inputIngresoOlga.disabled = true;
+        inputIngresoOlga.classList.add('read-only-disabled');
+      }
+    } else {
+      const valHabitual =
+        appConfig.gastosPersonales?.olga?.ingresoHabitual !== undefined
+          ? appConfig.gastosPersonales.olga.ingresoHabitual
+          : 550.0;
+      if (inputIngresoOlga) {
+        if (
+          !inputIngresoOlga.value ||
+          inputIngresoOlga.dataset.lastMonth !== String(currentMonthIndex)
+        ) {
+          inputIngresoOlga.value = valHabitual.toFixed(2);
+        }
+        inputIngresoOlga.dataset.lastMonth = String(currentMonthIndex);
+        inputIngresoOlga.disabled = !isPedroEditor;
+        if (!isPedroEditor) {
+          inputIngresoOlga.classList.add('read-only-disabled');
+        } else {
+          inputIngresoOlga.classList.remove('read-only-disabled');
+        }
+        ingresoOlgaMes = parseFloat(inputIngresoOlga.value);
+        if (isNaN(ingresoOlgaMes)) ingresoOlgaMes = valHabitual;
+      } else {
+        ingresoOlgaMes = valHabitual;
+      }
+    }
+
     // Renderizar Superávit de Olga
     const superavitAcumulado = appConfig.gastosPersonales?.olga?.superavit || 0;
-    const ingresoHabitual =
-      appConfig.gastosPersonales?.olga?.ingresoHabitual !== undefined
-        ? appConfig.gastosPersonales.olga.ingresoHabitual
-        : 550.0;
     const superavitMes = window.CalculationsModule.calcularSuperavit(
-      ingresoHabitual,
+      ingresoOlgaMes,
       desglose.desgloseOlga.total
     );
 
@@ -853,7 +913,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (olgaSuperavitDetail) {
       const signoMes = superavitMes > 0 ? '+' : '';
-      olgaSuperavitDetail.innerHTML = `Ingreso habitual: <strong>${formatMoneda(ingresoHabitual)} €</strong> &bull; Superávit este mes: <span style="font-weight: 600; color: ${superavitMes >= 0 ? '#10b981' : '#ef4444'}">${signoMes}${formatMoneda(superavitMes)} €</span>`;
+      const colorMes = superavitMes >= 0 ? '#10b981' : '#ef4444';
+      olgaSuperavitDetail.innerHTML = `Ingreso del mes: <strong>${formatMoneda(ingresoOlgaMes)} €</strong> &bull; Superávit este mes: <span style="font-weight: 600; color: ${colorMes}">${signoMes}${formatMoneda(superavitMes)} €</span>`;
     }
 
     // Renderizar Dinero que debería haber en cuenta común (Fianza repuesta + Superávit de Olga)
@@ -868,11 +929,6 @@ document.addEventListener('DOMContentLoaded', () => {
       dineroEsperadoDesgloseEl.innerHTML = `Fianza repuesta: <strong>${formatMoneda(fianzaAcumulado)} €</strong> + Superávit Olga: <strong>${formatMoneda(superavitAcumulado)} €</strong>`;
     }
 
-    // Verificar si el mes actual está marcado como completado
-    const yaRegistrado = historialTransferencias.some(
-      (t) => t.mesIndex === currentMonthIndex && t.anio === currentAnio
-    );
-
     if (yaRegistrado) {
       btnCompletarMes.disabled = true;
       btnCompletarMes.innerHTML = '<i data-lucide="check-check"></i> Transferencia registrada';
@@ -884,6 +940,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // Volver a aplicar opacidades por rol
     actualizarControlesEdicion(isPedroEditor);
     lucide.createIcons();
+  }
+
+  function actualizarCalculoSuperavitOlga() {
+    if (!olgaSuperavitDetail) return;
+    const desglose = window.CalculationsModule.calcularDesgloseMes(currentMonthIndex, appConfig);
+    const cuotaTeorica = desglose.desgloseOlga.total;
+    let ingreso = inputIngresoOlga ? parseFloat(inputIngresoOlga.value) : NaN;
+    if (isNaN(ingreso) || ingreso < 0) {
+      ingreso = 0;
+    }
+    const superavitMes = window.CalculationsModule.calcularSuperavit(ingreso, cuotaTeorica);
+    const signoMes = superavitMes > 0 ? '+' : '';
+    const colorMes = superavitMes >= 0 ? '#10b981' : '#ef4444';
+    olgaSuperavitDetail.innerHTML = `Ingreso del mes: <strong>${formatMoneda(ingreso)} €</strong> &bull; Superávit este mes: <span style="font-weight: 600; color: ${colorMes}">${signoMes}${formatMoneda(superavitMes)} €</span>`;
   }
 
   function renderizarConceptos(container, conceptos) {
@@ -1191,11 +1261,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    // 2. Calcular superávit de Olga e ingreso registrado
-    const ingresoOlga =
-      appConfig.gastosPersonales?.olga?.ingresoHabitual !== undefined
-        ? appConfig.gastosPersonales.olga.ingresoHabitual
-        : 550.0;
+    // 2. Calcular superávit de Olga e ingreso registrado desde el input
+    let ingresoOlga = inputIngresoOlga ? parseFloat(inputIngresoOlga.value) : NaN;
+    if (isNaN(ingresoOlga) || ingresoOlga <= 0) {
+      alert('Por favor, introduce un importe transferido por Olga válido y superior a 0 €.');
+      if (inputIngresoOlga) inputIngresoOlga.focus();
+      return;
+    }
     const cuotaTeoricaOlga = desglose.desgloseOlga.total;
     const superavitMes = window.CalculationsModule.calcularSuperavit(ingresoOlga, cuotaTeoricaOlga);
 
