@@ -1697,14 +1697,15 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `<td style="text-align:right;">${formatMoneda(manutencion)} €</td>`
         : '';
 
-      const tdExtraordinarios = extraordinarios > 0
-        ? `<td style="text-align:right;">
+      const tdExtraordinarios =
+        extraordinarios > 0
+          ? `<td style="text-align:right;">
             <div class="prevision-extra-cell">
               <span class="prevision-badge ${claseBadgeExtra}">${nombreBadgeExtra}</span>
               <span class="prevision-extra-amount">${formatMoneda(extraordinarios)} €</span>
             </div>
           </td>`
-        : '<td style="text-align:right;"><span style="color:var(--text-muted)">—</span></td>';
+          : '<td style="text-align:right;"><span style="color:var(--text-muted)">—</span></td>';
 
       // 1. Fila de la tabla (Desktop y modo Tabla)
       const row = document.createElement('tr');
@@ -1961,11 +1962,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const desglose = window.CalculationsModule.calcularDesgloseMes(currentMonthIndex, appConfig);
     const fianzaAcum = appConfig.fianza?.acumulado || 410.0;
     const superavitOlga = appConfig.gastosPersonales?.olga?.superavit || 115.57;
-    const dineroEsperado = window.CalculationsModule.calcularDineroEsperadoCuenta(fianzaAcum, superavitOlga);
+    const dineroEsperado = window.CalculationsModule.calcularDineroEsperadoCuenta(
+      fianzaAcum,
+      superavitOlga
+    );
 
     const temp = document.createElement('div');
     temp.id = 'temp-pdf-mes-container';
-    temp.style.cssText = 'position:fixed;left:-9999px;top:0;width:1050px;padding:32px;background:#ffffff;color:#1e293b;font-family:system-ui,-apple-system,sans-serif;box-sizing:border-box;z-index:-1000;';
+    temp.style.cssText =
+      'position:fixed;left:-9999px;top:0;width:1050px;padding:32px;background:#ffffff;color:#1e293b;font-family:system-ui,-apple-system,sans-serif;box-sizing:border-box;z-index:-1000;';
 
     temp.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #e2e8f0;padding-bottom:16px;margin-bottom:24px;">
@@ -1988,12 +1993,16 @@ document.addEventListener('DOMContentLoaded', () => {
             <span style="font-size:20px;font-weight:800;color:#4f46e5;">${formatMoneda(desglose.desgloseOlga.total)} €</span>
           </div>
           <div style="border-top:1px dashed #cbd5e1;padding-top:12px;">
-            ${desglose.desgloseOlga.conceptos.map(c => `
+            ${desglose.desgloseOlga.conceptos
+              .map(
+                (c) => `
               <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;border-bottom:1px solid #f1f5f9;">
                 <span style="color:#64748b;">${c.nombre}</span>
                 <strong style="color:#1e293b;">${formatMoneda(c.valor)} €</strong>
               </div>
-            `).join('')}
+            `
+              )
+              .join('')}
           </div>
         </div>
 
@@ -2004,12 +2013,16 @@ document.addEventListener('DOMContentLoaded', () => {
             <span style="font-size:20px;font-weight:800;color:#2563eb;">${formatMoneda(desglose.desglosePedro.total)} €</span>
           </div>
           <div style="border-top:1px dashed #cbd5e1;padding-top:12px;">
-            ${desglose.desglosePedro.conceptos.map(c => `
+            ${desglose.desglosePedro.conceptos
+              .map(
+                (c) => `
               <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:12px;border-bottom:1px solid #f1f5f9;">
                 <span style="color:#64748b;">${c.nombre}</span>
                 <strong style="color:#1e293b;">${formatMoneda(c.valor)} €</strong>
               </div>
-            `).join('')}
+            `
+              )
+              .join('')}
           </div>
         </div>
 
@@ -2054,7 +2067,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const temp = document.createElement('div');
     temp.id = 'temp-pdf-prevision-container';
-    temp.style.cssText = 'position:fixed;left:-9999px;top:0;width:1100px;padding:32px;background:#ffffff;color:#1e293b;font-family:system-ui,-apple-system,sans-serif;box-sizing:border-box;z-index:-1000;';
+    temp.style.cssText =
+      'position:fixed;left:-9999px;top:0;width:1100px;padding:32px;background:#ffffff;color:#1e293b;font-family:system-ui,-apple-system,sans-serif;box-sizing:border-box;z-index:-1000;';
 
     let totalAnual = 0;
     let totalHipoteca = 0;
@@ -2072,8 +2086,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const comunidad = conceptos.find((c) => c.nombre.includes('Comunidad'))?.valor || 0;
       const fianza = conceptos.find((c) => c.tipo === 'fianza')?.valor || 0;
       const coche = esOlga ? conceptos.find((c) => c.nombre.includes('Coche'))?.valor || 0 : 0;
-      const manutencion = esOlga ? conceptos.find((c) => c.nombre.includes('Manutenci'))?.valor || 0 : 0;
-      const extraordinarios = conceptos.filter((c) => c.tipo === 'extraordinario').reduce((s, c) => s + c.valor, 0);
+      const manutencion = esOlga
+        ? conceptos.find((c) => c.nombre.includes('Manutenci'))?.valor || 0
+        : 0;
+      const extraordinarios = conceptos
+        .filter((c) => c.tipo === 'extraordinario')
+        .reduce((s, c) => s + c.valor, 0);
 
       totalAnual += total;
       totalHipoteca += hipoteca;
@@ -2081,17 +2099,23 @@ document.addEventListener('DOMContentLoaded', () => {
       totalFianza += fianza;
       totalExtra += extraordinarios;
 
-      const tdCoche = esOlga ? `<td style="text-align:right;padding:8px 10px;">${formatMoneda(coche)} €</td>` : '';
-      const tdManutencion = esOlga ? `<td style="text-align:right;padding:8px 10px;">${formatMoneda(manutencion)} €</td>` : '';
+      const tdCoche = esOlga
+        ? `<td style="text-align:right;padding:8px 10px;">${formatMoneda(coche)} €</td>`
+        : '';
+      const tdManutencion = esOlga
+        ? `<td style="text-align:right;padding:8px 10px;">${formatMoneda(manutencion)} €</td>`
+        : '';
 
       let nombreBadgeExtra = '';
       let badgeExtraPDF = '';
       if (m === 0 || m === 1 || m === 2) {
         nombreBadgeExtra = 'IBI';
-        badgeExtraPDF = '<span style="font-size:8.5px;padding:1px 4px;border-radius:3px;font-weight:700;margin-right:4px;background:#fef3c7;color:#b45309;border:1px solid #fde68a;">IBI</span>';
+        badgeExtraPDF =
+          '<span style="font-size:8.5px;padding:1px 4px;border-radius:3px;font-weight:700;margin-right:4px;background:#fef3c7;color:#b45309;border:1px solid #fde68a;">IBI</span>';
       } else if (m === 3) {
         nombreBadgeExtra = 'Seguro de Casa';
-        badgeExtraPDF = '<span style="font-size:8.5px;padding:1px 4px;border-radius:3px;font-weight:700;margin-right:4px;background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;">Seguro de Casa</span>';
+        badgeExtraPDF =
+          '<span style="font-size:8.5px;padding:1px 4px;border-radius:3px;font-weight:700;margin-right:4px;background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;">Seguro de Casa</span>';
       } else if (extraordinarios > 0) {
         const extraConcepto = conceptos.find((c) => c.tipo === 'extraordinario');
         nombreBadgeExtra = extraConcepto ? extraConcepto.nombre : 'Extra';
@@ -2112,8 +2136,12 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }
 
-    const tdCocheTot = esOlga ? '<td style="text-align:right;font-weight:700;padding:10px;">-</td>' : '';
-    const tdManutencionTot = esOlga ? '<td style="text-align:right;font-weight:700;padding:10px;">-</td>' : '';
+    const tdCocheTot = esOlga
+      ? '<td style="text-align:right;font-weight:700;padding:10px;">-</td>'
+      : '';
+    const tdManutencionTot = esOlga
+      ? '<td style="text-align:right;font-weight:700;padding:10px;">-</td>'
+      : '';
 
     temp.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #e2e8f0;padding-bottom:16px;margin-bottom:20px;">

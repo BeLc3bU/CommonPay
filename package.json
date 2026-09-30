@@ -19,5 +19,9 @@
     "prettier": "^3.2.5",
     "vite": "^5.2.0",
     "vitest": "^1.4.0"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@vercel/postgres": "^0.10.0"
   }
 }

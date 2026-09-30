@@ -25,8 +25,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- Lucide Icons para iconografía SVG interactiva -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Supabase JS Client para base de datos y autenticación en la nube -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <!-- Configuración de PWA (Progressive Web App) -->
     <link rel="icon" type="image/png" href="/icons/icon-192.png" />
@@ -221,9 +219,7 @@
                 <i data-lucide="landmark"></i>
               </div>
               <div>
-                <h4 class="saldo-esperado-title">
-                  Dinero que debería haber en cuenta común
-                </h4>
+                <h4 class="saldo-esperado-title">Dinero que debería haber en cuenta común</h4>
                 <p class="saldo-esperado-subtitle">
                   Fondo de fianza repuesto hasta la fecha + Superávit acumulado de Olga
                 </p>
@@ -262,9 +258,7 @@
                     <i data-lucide="wallet"></i>
                     <span>Superávit de Olga</span>
                   </div>
-                  <div class="superavit-box-badge" id="olga-superavit-badge">
-                    +0,00 €
-                  </div>
+                  <div class="superavit-box-badge" id="olga-superavit-badge">+0,00 €</div>
                 </div>
                 <div class="superavit-box-detail" id="olga-superavit-detail">
                   Ingreso habitual: 550,00 € &bull; Superávit este mes: +0,00 €
@@ -324,9 +318,7 @@
                     <i data-lucide="calendar-check"></i>
                     <span>Cobro Mensual</span>
                   </div>
-                  <div class="inquilinos-badge" id="inquilinos-badge">
-                    Día 15
-                  </div>
+                  <div class="inquilinos-badge" id="inquilinos-badge">Día 15</div>
                 </div>
                 <div class="inquilinos-info-detail" id="inquilinos-detail">
                   Ingreso directo a cuenta común para compensar hipoteca
@@ -898,9 +890,7 @@
               </div>
 
               <div class="form-row">
-                <label class="form-label" for="cfg-olga-superavit"
-                  >Superávit Acumulado Olga</label
-                >
+                <label class="form-label" for="cfg-olga-superavit">Superávit Acumulado Olga</label>
                 <div class="input-wrapper">
                   <input
                     type="number"
@@ -1049,7 +1039,9 @@
                     padding-bottom: 0.75rem;
                   "
                 >
-                  <span style="color: var(--text-muted); font-weight: 500">Fondo de Fianza Repuesto:</span>
+                  <span style="color: var(--text-muted); font-weight: 500"
+                    >Fondo de Fianza Repuesto:</span
+                  >
                   <strong
                     id="con-fianza-esperada"
                     style="
@@ -1068,7 +1060,9 @@
                     padding-bottom: 0.75rem;
                   "
                 >
-                  <span style="color: var(--text-muted); font-weight: 500">Superávit Olga en Cuenta:</span>
+                  <span style="color: var(--text-muted); font-weight: 500"
+                    >Superávit Olga en Cuenta:</span
+                  >
                   <strong
                     id="con-superavit-olga"
                     style="
@@ -1089,14 +1083,12 @@
                     border-radius: var(--radius-sm);
                   "
                 >
-                  <span style="color: var(--text-main); font-weight: 600">Total Esperado a Proteger:</span>
+                  <span style="color: var(--text-main); font-weight: 600"
+                    >Total Esperado a Proteger:</span
+                  >
                   <strong
                     id="con-total-esperado-cuenta"
-                    style="
-                      color: #10b981;
-                      font-size: 1.25rem;
-                      font-family: 'Outfit', sans-serif;
-                    "
+                    style="color: #10b981; font-size: 1.25rem; font-family: 'Outfit', sans-serif"
                     >0,00 €</strong
                   >
                 </div>
@@ -1260,10 +1252,16 @@
               <button
                 class="btn btn-secondary"
                 id="btn-exportar-pdf-prevision"
-                style="display: flex; align-items: center; gap: 0.4rem; padding: 0.55rem 0.95rem; font-size: 0.85rem;"
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 0.4rem;
+                  padding: 0.55rem 0.95rem;
+                  font-size: 0.85rem;
+                "
                 title="Descargar previsión anual en PDF"
               >
-                <i data-lucide="file-down" style="width: 16px; height: 16px;"></i>
+                <i data-lucide="file-down" style="width: 16px; height: 16px"></i>
                 <span>Exportar PDF</span>
               </button>
             </div>
@@ -1292,7 +1290,11 @@
             </div>
 
             <!-- TABLA MENSUAL (Desktop por defecto, alternable en móvil) -->
-            <div id="prevision-table-container" class="glass-card prevision-table-card" style="padding: 0; overflow: hidden">
+            <div
+              id="prevision-table-container"
+              class="glass-card prevision-table-card"
+              style="padding: 0; overflow: hidden"
+            >
               <div class="prevision-table-header">
                 <h3 id="prevision-table-title" style="font-size: 1.1rem">
                   Calendario de Aportaciones — Olga
@@ -1300,10 +1302,13 @@
                 <span id="prevision-total-badge" class="prevision-total-badge"></span>
               </div>
               <div class="table-scroll-hint mobile-only">
-                <i data-lucide="chevrons-left-right" style="width: 15px; height: 15px;"></i>
+                <i data-lucide="chevrons-left-right" style="width: 15px; height: 15px"></i>
                 <span>Desliza horizontalmente para ver todos los conceptos</span>
               </div>
-              <div class="table-wrapper prevision-table-wrapper" style="border: none; border-radius: 0">
+              <div
+                class="table-wrapper prevision-table-wrapper"
+                style="border: none; border-radius: 0"
+              >
                 <table id="prevision-tabla" class="prevision-table">
                   <thead>
                     <tr>
@@ -1418,16 +1423,55 @@
 
     <!-- MODAL DE DESCARGA DE PDF / RESPALDO -->
     <div id="pdf-download-modal" class="modal-overlay" style="display: none">
-      <div class="glass-card modal-content" style="max-width: 420px; text-align: center; padding: 1.75rem;">
-        <div style="width: 52px; height: 52px; border-radius: 50%; background: rgba(16, 185, 129, 0.12); color: #10b981; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
-          <i data-lucide="file-check" style="width: 28px; height: 28px;"></i>
+      <div
+        class="glass-card modal-content"
+        style="max-width: 420px; text-align: center; padding: 1.75rem"
+      >
+        <div
+          style="
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            background: rgba(16, 185, 129, 0.12);
+            color: #10b981;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+          "
+        >
+          <i data-lucide="file-check" style="width: 28px; height: 28px"></i>
         </div>
-        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;" id="pdf-modal-title">¡Documento PDF Listo!</h3>
-        <p style="font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.5;">
-          El informe se ha generado correctamente. Si la descarga no ha comenzado de forma automática, pulsa el botón a continuación para abrirlo o descargarlo en tu dispositivo:
+        <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem" id="pdf-modal-title">
+          ¡Documento PDF Listo!
+        </h3>
+        <p
+          style="
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
+          "
+        >
+          El informe se ha generado correctamente. Si la descarga no ha comenzado de forma
+          automática, pulsa el botón a continuación para abrirlo o descargarlo en tu dispositivo:
         </p>
-        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-          <a id="btn-pdf-modal-download" href="#" download="" target="_blank" class="btn btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; text-decoration: none; padding: 0.75rem;">
+        <div style="display: flex; flex-direction: column; gap: 0.75rem">
+          <a
+            id="btn-pdf-modal-download"
+            href="#"
+            download=""
+            target="_blank"
+            class="btn btn-primary"
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 0.5rem;
+              text-decoration: none;
+              padding: 0.75rem;
+            "
+          >
             <i data-lucide="download"></i> Descargar / Abrir PDF
           </a>
           <button type="button" class="btn btn-secondary" id="btn-close-pdf-modal">Cerrar</button>

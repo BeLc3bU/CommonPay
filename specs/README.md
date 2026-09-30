@@ -7,8 +7,8 @@ Este directorio centraliza todas las especificaciones, planes técnicos, tareas 
 ## 📌 Especificaciones Implementadas ✅
 1. **[000 · CommonPay Core](./000-commonpay-core/spec.md)**
    - Motor financiero de cálculo, redondeo centesimal exacto, gráficos anuales (Chart.js), persistencia en `LocalStorage` y exportaciones (PDF/XLSX).
-2. **001 · Persistencia en Nube y Autenticación**
-   - Integración de Supabase Auth y políticas RLS con roles diferenciados (Pedro Editor, Olga Invitada).
+2. **[001 · Migración de Persistencia a Vercel Postgres](./001-vercel-postgres-migration/spec.md)**
+   - Migración desde Supabase a Vercel Postgres (Serverless Neon) para eliminar pausas por inactividad, con autenticación serverless y persistencia híbrida.
 3. **002 · Liquidación y Conciliación Día 15**
    - Módulo de conciliación bancaria para calcular sobrantes y déficits respecto al ahorro de fianza acumulado.
 4. **003 · Alertas Contractuales y iCalendar**

@@ -1,12 +1,14 @@
 /**
- * Módulo de Persistencia para CommonPay (Soporte Híbrido: Supabase / LocalStorage)
+ * Módulo de Persistencia para CommonPay (Soporte Híbrido: Vercel Postgres / LocalStorage)
  */
 
 const CONFIG_KEY = 'commonpay_config';
 const FIANZA_ACUMULADO_KEY = 'commonpay_fianza_acumulado';
 const FIANZA_HISTORIAL_KEY = 'commonpay_fianza_historial';
 const HISTORIAL_KEY = 'commonpay_historial';
+const CONCILIACIONES_KEY = 'commonpay_conciliaciones';
 const THEME_KEY = 'commonpay_theme';
+const AUTH_TOKEN_KEY = 'commonpay_editor_token';
 
 // Configuración por defecto basada en los requisitos del negocio
 const DEFAULT_CONFIG = {
@@ -53,106 +55,25 @@ const DEFAULT_CONFIG = {
   }
 };
 
-let supabaseClient = null;
-let isSupabaseActive = false;
+let isCloudActive = true;
 
 /**
- * Inicializa el cliente de Supabase haciendo fetch al endpoint Serverless /api/config.
- * Si las credenciales no existen o fallan, cae de forma transparente a LocalStorage.
+ * Obtiene las cabeceras estándar para peticiones HTTP a la API Serverless
  */
-async function inicializarSupabase() {
-  try {
-    const response = await fetch('/api/config');
-    if (!response.ok) {
-      throw new Error(`Error HTTP: ${response.status}`);
-    }
-    const config = await response.json();
-
-    if (config.supabaseUrl && config.supabaseAnonKey) {
-      // Validar si la API de Supabase se ha cargado en el navegador (CDN en index.html)
-      if (typeof supabase !== 'undefined') {
-        supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
-        isSupabaseActive = true;
-        console.info('Supabase inicializado correctamente.');
-      } else {
-        console.warn('Librería de Supabase no cargada en el DOM. Usando LocalStorage.');
-      }
-    } else {
-      console.info('No se detectó configuración de Supabase. Usando LocalStorage (Modo Local).');
-    }
-  } catch (error) {
-    console.error('Error al inicializar Supabase. Cayendo en LocalStorage:', error);
-    isSupabaseActive = false;
-  }
-}
-
-/**
- * Verifica si hay una sesión activa de usuario en Supabase.
- */
-async function obtenerUsuarioActivo() {
-  if (!isSupabaseActive) return null;
-  try {
-    const {
-      data: { user },
-      error
-    } = await supabaseClient.auth.getUser();
-    if (error) return null;
-    return user;
-  } catch (_e) {
-    return null;
-  }
-}
-
-/**
- * Inicia sesión con email y contraseña.
- */
-async function login(email, password) {
-  if (!isSupabaseActive) {
-    throw new Error('La base de datos en la nube no está configurada.');
-  }
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-  if (error) throw error;
-  return data.user;
-}
-
-/**
- * Cierra la sesión activa en Supabase.
- */
-async function logout() {
-  if (!isSupabaseActive) return;
-  const { error } = await supabaseClient.auth.signOut();
-  if (error) throw error;
-}
-
-// --- UTILERÍAS DE MAPEO PARA LA BASE DE DATOS ---
-function mapearAJs(dbRow) {
-  return {
-    mesIndex: dbRow.mes_index,
-    mesNombre: dbRow.mes_nombre,
-    anio: dbRow.anio,
-    fechaCompletado: dbRow.fecha_completado,
-    transferenciaOlga: parseFloat(dbRow.transferencia_olga),
-    transferenciaPedro: parseFloat(dbRow.transferencia_pedro),
-    fianzaAlMomento: parseFloat(dbRow.fianza_al_momento),
-    desglose: dbRow.desglose
+function getAuthHeaders() {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  const headers = {
+    'Content-Type': 'application/json'
   };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
 }
 
-function mapearADb(jsRow) {
-  return {
-    mes_index: jsRow.mesIndex,
-    mes_nombre: jsRow.mesNombre,
-    anio: jsRow.anio,
-    fecha_completado: jsRow.fechaCompletado,
-    transferencia_olga: jsRow.transferenciaOlga,
-    transferencia_pedro: jsRow.transferenciaPedro,
-    fianza_al_momento: jsRow.fianzaAlMomento,
-    desglose: jsRow.desglose
-  };
-}
-
-// --- FUNCIONES DE ALMACENAMIENTO DE DATOS ---
-
+/**
+ * Normaliza la configuración asegurando que todos los campos requeridos existan
+ */
 function normalizarConfiguracion(cfg) {
   if (!cfg) cfg = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
   if (!cfg.gastosPersonales) cfg.gastosPersonales = {};
@@ -168,10 +89,7 @@ function normalizarConfiguracion(cfg) {
     cfg.gastosPersonales.olga.ingresoHabitual = 550.0;
   }
   if (!cfg.alertas) cfg.alertas = JSON.parse(JSON.stringify(DEFAULT_CONFIG.alertas));
-  if (
-    cfg.alertas.cuotaHipotecaNueva === undefined ||
-    cfg.alertas.cuotaHipotecaNueva === 716.81
-  ) {
+  if (cfg.alertas.cuotaHipotecaNueva === undefined || cfg.alertas.cuotaHipotecaNueva === 716.81) {
     cfg.alertas.cuotaHipotecaNueva = 777.37;
   }
   if (cfg.alertas.mesHipoteca === undefined || cfg.alertas.mesHipoteca === 8) {
@@ -181,188 +99,288 @@ function normalizarConfiguracion(cfg) {
 }
 
 /**
- * Carga la configuración desde la nube (Supabase) o LocalStorage.
+ * Inicializa la persistencia conectando con la API serverless de Vercel.
+ * Mantiene el nombre inicializarSupabase por compatibilidad de interfaz con app.js.
+ */
+async function inicializarPersistencia() {
+  try {
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
+    const headers = getAuthHeaders();
+    const response = await fetch('/api/auth?action=check', { headers });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (token && !data.isEditor) {
+        // Token inválido o expirado en el servidor
+        localStorage.removeItem(AUTH_TOKEN_KEY);
+      }
+      isCloudActive = true;
+      console.info('Conexión con Vercel Postgres establecida correctamente.');
+    } else {
+      console.warn('API de Vercel no disponible. Activando modo LocalStorage.');
+      isCloudActive = false;
+    }
+  } catch (error) {
+    console.warn('Modo offline detectado. Usando LocalStorage:', error.message);
+    isCloudActive = false;
+  }
+}
+
+const inicializarSupabase = inicializarPersistencia;
+
+/**
+ * Verifica si hay una sesión activa de usuario editor.
+ */
+async function obtenerUsuarioActivo() {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  if (!token) return null;
+
+  try {
+    const response = await fetch('/api/auth?action=check', {
+      headers: getAuthHeaders()
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.isEditor && data.user) {
+        return data.user;
+      }
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      return null;
+    }
+  } catch (_e) {
+    // Si estamos offline pero el token parece estructuralmente válido y reciente (<30 días)
+    const partes = token.split('_');
+    if (partes.length === 3 && partes[0] === 'cp') {
+      const ts = parseInt(partes[1], 10);
+      if (!isNaN(ts) && Date.now() - ts < 30 * 24 * 60 * 60 * 1000) {
+        return { email: 'pedro@commonpay.local', role: 'editor' };
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Inicia sesión como editor con contraseña.
+ */
+async function login(email, password) {
+  try {
+    const response = await fetch('/api/auth?action=login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Contraseña incorrecta.');
+    }
+
+    if (data.token) {
+      localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+    }
+
+    return data.user || { email: email || 'pedro@commonpay.local', role: 'editor' };
+  } catch (error) {
+    console.error('Error al iniciar sesión:', error);
+    throw error;
+  }
+}
+
+/**
+ * Cierra la sesión activa de editor.
+ */
+async function logout() {
+  try {
+    await fetch('/api/auth?action=logout', {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+  } catch (_e) {
+    // Ignorar errores de red al cerrar sesión
+  } finally {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+  }
+}
+
+// -------------------------------------------------------------
+// CONFIGURACIÓN
+// -------------------------------------------------------------
+
+/**
+ * Carga la configuración desde Vercel Postgres o LocalStorage.
  */
 async function getConfiguration() {
-  if (isSupabaseActive) {
+  if (isCloudActive) {
     try {
-      const { data, error } = await supabaseClient
-        .from('configuracion')
-        .select('data')
-        .eq('id', 1)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data && data.data) {
-        return normalizarConfiguracion(data.data);
-      } else {
-        // Si no hay configuración remota creada, guardar la por defecto (si somos editores)
-        const user = await obtenerUsuarioActivo();
-        if (user) {
-          await saveConfiguration(DEFAULT_CONFIG);
+      const res = await fetch('/api/data?resource=config');
+      if (res.ok) {
+        const cloudConfig = await res.json();
+        if (cloudConfig) {
+          const normalizada = normalizarConfiguracion(cloudConfig);
+          localStorage.setItem(CONFIG_KEY, JSON.stringify(normalizada));
+          return normalizada;
+        } else {
+          // Si aún no hay configuración en la nube, inicializar con la por defecto si somos editores
+          const user = await obtenerUsuarioActivo();
+          if (user) {
+            await saveConfiguration(DEFAULT_CONFIG);
+          }
+          return normalizarConfiguracion(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
         }
-        return normalizarConfiguracion(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
       }
     } catch (err) {
-      console.error('Error al obtener configuración de Supabase. Leyendo LocalStorage:', err);
+      console.warn('Error al leer configuración de Vercel Postgres. Usando LocalStorage:', err);
     }
   }
 
   // Fallback LocalStorage
-  const data = localStorage.getItem(CONFIG_KEY);
-  if (!data) {
+  const localData = localStorage.getItem(CONFIG_KEY);
+  if (!localData) {
     localStorage.setItem(CONFIG_KEY, JSON.stringify(DEFAULT_CONFIG));
     return normalizarConfiguracion(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
   }
   try {
-    return normalizarConfiguracion(JSON.parse(data));
+    return normalizarConfiguracion(JSON.parse(localData));
   } catch (_e) {
     return normalizarConfiguracion(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
   }
 }
 
 /**
- * Guarda la configuración en la nube (Supabase) o LocalStorage.
+ * Guarda la configuración en la nube y sincroniza con LocalStorage.
  */
 async function saveConfiguration(config) {
-  if (isSupabaseActive) {
+  const normalizada = normalizarConfiguracion(config);
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(normalizada));
+
+  if (isCloudActive) {
     try {
-      const user = await obtenerUsuarioActivo();
-      if (!user) {
-        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
+      const res = await fetch('/api/data?resource=config', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(normalizada)
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al guardar configuración en el servidor.');
       }
-
-      const { error } = await supabaseClient
-        .from('configuracion')
-        .upsert({ id: 1, data: config, updated_at: new Date().toISOString() });
-
-      if (error) throw error;
-      return;
     } catch (err) {
-      console.error('Error al guardar configuración en Supabase. Guardando en LocalStorage:', err);
+      console.error('Error al sincronizar configuración con la nube:', err);
       throw err;
     }
   }
-
-  // Fallback LocalStorage
-  localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
 }
 
 /**
- * Restablece la configuración a los valores por defecto.
+ * Restablece la configuración a los valores iniciales por defecto.
  */
 async function resetConfiguration() {
   await saveConfiguration(DEFAULT_CONFIG);
   return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 }
 
+// -------------------------------------------------------------
+// FIANZA ACUMULADO
+// -------------------------------------------------------------
+
 /**
- * Obtiene el acumulado de fianza desde Supabase o LocalStorage.
+ * Obtiene el acumulado actual de fianza desde Vercel Postgres o LocalStorage.
  */
 async function getFianzaAcumulado() {
-  if (isSupabaseActive) {
+  if (isCloudActive) {
     try {
-      const { data, error } = await supabaseClient
-        .from('fianza_estado')
-        .select('acumulado')
-        .eq('id', 1)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (data) {
-        return parseFloat(data.acumulado);
-      } else {
-        const user = await obtenerUsuarioActivo();
-        if (user) {
-          await saveFianzaAcumulado(0.0);
+      const res = await fetch('/api/data?resource=fianza_acumulado');
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.acumulado !== undefined) {
+          const val = parseFloat(data.acumulado);
+          localStorage.setItem(FIANZA_ACUMULADO_KEY, val.toString());
+          return val;
         }
-        return 0.0;
       }
     } catch (err) {
-      console.error('Error al leer fianza de Supabase. Usando LocalStorage:', err);
+      console.warn('Error al leer acumulado de fianza de la nube. Usando LocalStorage:', err);
     }
   }
 
   // Fallback LocalStorage
-  const data = localStorage.getItem(FIANZA_ACUMULADO_KEY);
-  if (data === null || parseFloat(data) === 0.0) {
+  const localData = localStorage.getItem(FIANZA_ACUMULADO_KEY);
+  if (localData === null || parseFloat(localData) === 0.0) {
     localStorage.setItem(FIANZA_ACUMULADO_KEY, '410.00');
     return 410.0;
   }
-  const valor = parseFloat(data);
+  const valor = parseFloat(localData);
   return isNaN(valor) ? 410.0 : valor;
 }
 
 /**
- * Guarda el acumulado de fianza en la nube o LocalStorage.
+ * Guarda el acumulado de fianza en la nube y en LocalStorage.
  */
 async function saveFianzaAcumulado(valor) {
   const valorRedondeado = Math.round((valor + Number.EPSILON) * 100) / 100;
+  localStorage.setItem(FIANZA_ACUMULADO_KEY, valorRedondeado.toString());
 
-  if (isSupabaseActive) {
+  if (isCloudActive) {
     try {
-      const user = await obtenerUsuarioActivo();
-      if (!user) {
-        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
+      const res = await fetch('/api/data?resource=fianza_acumulado', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ acumulado: valorRedondeado })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al guardar acumulado de fianza en la nube.');
       }
-
-      const { error } = await supabaseClient
-        .from('fianza_estado')
-        .upsert({ id: 1, acumulado: valorRedondeado, updated_at: new Date().toISOString() });
-
-      if (error) throw error;
-      return;
     } catch (err) {
-      console.error('Error al guardar fianza en Supabase:', err);
+      console.error('Error al guardar fianza en la nube:', err);
       throw err;
     }
   }
-
-  // Fallback LocalStorage
-  localStorage.setItem(FIANZA_ACUMULADO_KEY, valorRedondeado.toString());
 }
 
+// -------------------------------------------------------------
+// HISTORIAL DE TRANSFERENCIAS MENSUALES
+// -------------------------------------------------------------
+
 /**
- * Obtiene el historial de transferencias desde Supabase o LocalStorage.
+ * Obtiene el historial de transferencias mensuales.
  */
 async function getHistorial() {
-  if (isSupabaseActive) {
+  if (isCloudActive) {
     try {
-      const { data, error } = await supabaseClient
-        .from('historial_transferencias')
-        .select('*')
-        .order('mes_index', { ascending: true });
-
-      if (error) throw error;
-      return (data || []).map(mapearAJs);
+      const res = await fetch('/api/data?resource=historial');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          localStorage.setItem(HISTORIAL_KEY, JSON.stringify(data));
+          return data;
+        }
+      }
     } catch (err) {
-      console.error('Error al leer historial de Supabase. Usando LocalStorage:', err);
+      console.warn('Error al leer historial de meses de la nube. Usando LocalStorage:', err);
     }
   }
 
   // Fallback LocalStorage
-  const data = localStorage.getItem(HISTORIAL_KEY);
-  if (!data) {
+  const localData = localStorage.getItem(HISTORIAL_KEY);
+  if (!localData) {
     localStorage.setItem(HISTORIAL_KEY, JSON.stringify([]));
     return [];
   }
   try {
-    return JSON.parse(data);
+    return JSON.parse(localData);
   } catch (_e) {
     return [];
   }
 }
 
 /**
- * Guarda el historial completo en LocalStorage (Solo se usa de fallback en local).
- */
-function saveHistorialLocal(historial) {
-  localStorage.setItem(HISTORIAL_KEY, JSON.stringify(historial));
-}
-
-/**
- * Añade una transferencia al historial.
+ * Añade una transferencia mensual completada al historial.
  */
 async function addTransferenciaAlHistorial(transferencia) {
   const historial = await getHistorial();
@@ -374,27 +392,30 @@ async function addTransferenciaAlHistorial(transferencia) {
     return false; // Ya registrado
   }
 
-  if (isSupabaseActive) {
+  if (isCloudActive) {
     try {
-      const user = await obtenerUsuarioActivo();
-      if (!user) {
-        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
+      const res = await fetch('/api/data?resource=historial', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(transferencia)
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al registrar transferencia en la nube.');
       }
 
-      const dbRow = mapearADb(transferencia);
-      const { error } = await supabaseClient.from('historial_transferencias').insert(dbRow);
-
-      if (error) throw error;
-      return true;
+      const resData = await res.json();
+      if (resData.id) transferencia.id = resData.id;
     } catch (err) {
-      console.error('Error al añadir transferencia en Supabase:', err);
+      console.error('Error al guardar mes en la nube:', err);
       throw err;
     }
   }
 
   // Fallback LocalStorage
   historial.push(transferencia);
-  saveHistorialLocal(historial);
+  localStorage.setItem(HISTORIAL_KEY, JSON.stringify(historial));
   return true;
 }
 
@@ -402,23 +423,22 @@ async function addTransferenciaAlHistorial(transferencia) {
  * Elimina una transferencia del historial por mes y año.
  */
 async function deleteTransferenciaDelHistorial(mesIndex, anio) {
-  if (isSupabaseActive) {
+  if (isCloudActive) {
     try {
-      const user = await obtenerUsuarioActivo();
-      if (!user) {
-        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
+      const res = await fetch(
+        `/api/data?resource=historial&mesIndex=${encodeURIComponent(mesIndex)}&anio=${encodeURIComponent(anio)}`,
+        {
+          method: 'DELETE',
+          headers: getAuthHeaders()
+        }
+      );
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al eliminar transferencia de la nube.');
       }
-
-      const { error } = await supabaseClient
-        .from('historial_transferencias')
-        .delete()
-        .eq('mes_index', mesIndex)
-        .eq('anio', anio);
-
-      if (error) throw error;
-      return;
     } catch (err) {
-      console.error('Error al eliminar transferencia en Supabase:', err);
+      console.error('Error al eliminar mes en la nube:', err);
       throw err;
     }
   }
@@ -426,66 +446,150 @@ async function deleteTransferenciaDelHistorial(mesIndex, anio) {
   // Fallback LocalStorage
   let historial = await getHistorial();
   historial = historial.filter((t) => !(t.mesIndex === mesIndex && t.anio === anio));
-  saveHistorialLocal(historial);
+  localStorage.setItem(HISTORIAL_KEY, JSON.stringify(historial));
 }
 
-const CONCILIACIONES_KEY = 'commonpay_conciliaciones';
-
-// --- UTILERÍAS DE MAPEO PARA CONCILIACIONES ---
-function mapearConciliacionAJs(dbRow) {
-  return {
-    id: dbRow.id,
-    mesIndex: dbRow.mes_index,
-    mesNombre: dbRow.mes_nombre,
-    anio: dbRow.anio,
-    saldoReal: parseFloat(dbRow.saldo_real),
-    fianzaAcumulada: parseFloat(dbRow.fianza_acumulada),
-    diferencia: parseFloat(dbRow.diferencia),
-    tipo: dbRow.tipo,
-    fecha: dbRow.fecha
-  };
-}
-
-function mapearConciliacionADb(jsRow) {
-  return {
-    mes_index: jsRow.mesIndex,
-    mes_nombre: jsRow.mesNombre,
-    anio: jsRow.anio,
-    saldo_real: jsRow.saldoReal,
-    fianza_acumulada: jsRow.fianzaAcumulada,
-    diferencia: jsRow.diferencia,
-    tipo: jsRow.tipo,
-    fecha: jsRow.fecha || new Date().toISOString()
-  };
-}
+// -------------------------------------------------------------
+// HISTORIAL DE MOVIMIENTOS DE FIANZA
+// -------------------------------------------------------------
 
 /**
- * Obtiene el historial de conciliaciones/liquidaciones desde Supabase o LocalStorage.
+ * Obtiene la lista de movimientos registrados en el fondo de fianza.
  */
-async function getConciliaciones() {
-  if (isSupabaseActive) {
+async function getFianzaHistorial() {
+  if (isCloudActive) {
     try {
-      const { data, error } = await supabaseClient
-        .from('conciliaciones')
-        .select('*')
-        .order('anio', { ascending: false })
-        .order('mes_index', { ascending: false });
-
-      if (error) throw error;
-      return (data || []).map(mapearConciliacionAJs);
+      const res = await fetch('/api/data?resource=fianza');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          localStorage.setItem(FIANZA_HISTORIAL_KEY, JSON.stringify(data));
+          return data;
+        }
+      }
     } catch (err) {
-      console.error('Error al leer conciliaciones de Supabase. Usando LocalStorage:', err);
+      console.warn('Error al leer movimientos de fianza de la nube. Usando LocalStorage:', err);
     }
   }
 
   // Fallback LocalStorage
-  const data = localStorage.getItem(CONCILIACIONES_KEY);
-  if (!data) {
+  const localData = localStorage.getItem(FIANZA_HISTORIAL_KEY);
+  if (!localData) {
+    localStorage.setItem(FIANZA_HISTORIAL_KEY, JSON.stringify([]));
+    return [];
+  }
+  try {
+    return JSON.parse(localData);
+  } catch (_e) {
+    return [];
+  }
+}
+
+/**
+ * Añade un movimiento (ingreso o retiro) al fondo de fianza.
+ */
+async function addMovimientoFianza(concepto, importe, acumuladoDespues) {
+  const nuevoMovimiento = {
+    id:
+      typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).substring(2, 9),
+    fecha: new Date().toISOString(),
+    tipo: importe >= 0 ? 'ingreso' : 'retiro',
+    concepto,
+    importe,
+    balanceResultante: acumuladoDespues,
+    acumuladoDespues
+  };
+
+  if (isCloudActive) {
+    try {
+      const res = await fetch('/api/data?resource=fianza', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(nuevoMovimiento)
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al guardar movimiento de fianza en la nube.');
+      }
+
+      const resData = await res.json();
+      if (resData.id) {
+        nuevoMovimiento.id = resData.id;
+      }
+    } catch (err) {
+      console.error('Error al guardar movimiento de fianza en la nube:', err);
+      throw err;
+    }
+  }
+
+  // Fallback LocalStorage
+  const historial = await getFianzaHistorial();
+  historial.unshift(nuevoMovimiento);
+  localStorage.setItem(FIANZA_HISTORIAL_KEY, JSON.stringify(historial));
+  return nuevoMovimiento;
+}
+
+/**
+ * Elimina un movimiento del fondo de fianza por ID.
+ */
+async function deleteMovimientoFianza(id) {
+  if (isCloudActive) {
+    try {
+      const res = await fetch(`/api/data?resource=fianza&id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al eliminar movimiento de fianza en la nube.');
+      }
+    } catch (err) {
+      console.error('Error al eliminar movimiento de fianza en la nube:', err);
+      throw err;
+    }
+  }
+
+  // Fallback LocalStorage
+  let historial = await getFianzaHistorial();
+  historial = historial.filter((m) => m.id !== id);
+  localStorage.setItem(FIANZA_HISTORIAL_KEY, JSON.stringify(historial));
+}
+
+// -------------------------------------------------------------
+// HISTORIAL DE CONCILIACIONES / LIQUIDACIÓN DÍA 15
+// -------------------------------------------------------------
+
+/**
+ * Obtiene el historial de conciliaciones.
+ */
+async function getConciliaciones() {
+  if (isCloudActive) {
+    try {
+      const res = await fetch('/api/data?resource=conciliaciones');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          localStorage.setItem(CONCILIACIONES_KEY, JSON.stringify(data));
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('Error al leer conciliaciones de la nube. Usando LocalStorage:', err);
+    }
+  }
+
+  // Fallback LocalStorage
+  const localData = localStorage.getItem(CONCILIACIONES_KEY);
+  if (!localData) {
     localStorage.setItem(CONCILIACIONES_KEY, JSON.stringify([]));
     return [];
   }
   try {
-    return JSON.parse(data);
+    return JSON.parse(localData);
   } catch (_e) {
     return [];
   }
@@ -504,176 +608,80 @@ async function addConciliacion(conciliacion) {
     return false; // Ya registrado
   }
 
-  if (isSupabaseActive) {
+  if (isCloudActive) {
     try {
-      const user = await obtenerUsuarioActivo();
-      if (!user) {
-        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
+      const res = await fetch('/api/data?resource=conciliaciones', {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(conciliacion)
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al registrar conciliación en la nube.');
       }
 
-      const dbRow = mapearConciliacionADb(conciliacion);
-      const { error } = await supabaseClient.from('conciliaciones').insert(dbRow);
-
-      if (error) throw error;
-      return true;
+      const resData = await res.json();
+      if (resData.id) conciliacion.id = resData.id;
     } catch (err) {
-      console.error('Error al añadir conciliación en Supabase:', err);
+      console.error('Error al registrar conciliación en la nube:', err);
       throw err;
     }
   }
 
   // Fallback LocalStorage
-  conciliacion.id = crypto.randomUUID
-    ? crypto.randomUUID()
-    : Math.random().toString(36).substring(2, 9);
+  conciliacion.id =
+    conciliacion.id ||
+    (typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : Math.random().toString(36).substring(2, 9));
   conciliacion.fecha = conciliacion.fecha || new Date().toISOString();
-  lista.push(conciliacion);
+  lista.unshift(conciliacion);
   localStorage.setItem(CONCILIACIONES_KEY, JSON.stringify(lista));
   return true;
 }
 
 /**
- * Elimina una conciliación por ID en Supabase, o por mes y año en LocalStorage.
+ * Elimina una conciliación por ID o por mes y año.
  */
 async function deleteConciliacion(id, mesIndex, anio) {
-  if (isSupabaseActive) {
+  if (isCloudActive) {
     try {
-      const user = await obtenerUsuarioActivo();
-      if (!user) {
-        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
+      let url = '/api/data?resource=conciliaciones';
+      if (id) {
+        url += `&id=${encodeURIComponent(id)}`;
+      } else if (mesIndex !== undefined && anio !== undefined) {
+        url += `&mesIndex=${encodeURIComponent(mesIndex)}&anio=${encodeURIComponent(anio)}`;
       }
 
-      const { error } = await supabaseClient.from('conciliaciones').delete().eq('id', id);
+      const res = await fetch(url, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
 
-      if (error) throw error;
-      return;
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || 'Error al eliminar conciliación en la nube.');
+      }
     } catch (err) {
-      console.error('Error al eliminar conciliación en Supabase:', err);
+      console.error('Error al eliminar conciliación en la nube:', err);
       throw err;
     }
   }
 
   // Fallback LocalStorage
   let lista = await getConciliaciones();
-  lista = lista.filter((c) => !(c.mesIndex === mesIndex && c.anio === anio));
+  lista = lista.filter((c) => {
+    if (id && c.id === id) return false;
+    if (c.mesIndex === mesIndex && c.anio === anio) return false;
+    return true;
+  });
   localStorage.setItem(CONCILIACIONES_KEY, JSON.stringify(lista));
 }
 
-// --- HISTORIAL DE FIANZA ---
-
-function mapearMovimientoFianzaAJs(dbRow) {
-  return {
-    id: dbRow.id,
-    fecha: dbRow.fecha,
-    concepto: dbRow.concepto,
-    importe: parseFloat(dbRow.importe),
-    acumuladoDespues: parseFloat(dbRow.acumulado_despues)
-  };
-}
-
-function mapearMovimientoFianzaADb(jsRow) {
-  return {
-    fecha: jsRow.fecha || new Date().toISOString(),
-    concepto: jsRow.concepto,
-    importe: jsRow.importe,
-    acumulado_despues: jsRow.acumuladoDespues
-  };
-}
-
-/**
- * Obtiene el historial de movimientos de fianza.
- */
-async function getFianzaHistorial() {
-  if (isSupabaseActive) {
-    try {
-      const { data, error } = await supabaseClient
-        .from('fianza_historial')
-        .select('*')
-        .order('fecha', { ascending: false });
-
-      if (error) throw error;
-      return (data || []).map(mapearMovimientoFianzaAJs);
-    } catch (err) {
-      console.error('Error al leer historial de fianza de Supabase. Usando LocalStorage:', err);
-    }
-  }
-
-  // Fallback LocalStorage
-  const data = localStorage.getItem(FIANZA_HISTORIAL_KEY);
-  if (!data) {
-    localStorage.setItem(FIANZA_HISTORIAL_KEY, JSON.stringify([]));
-    return [];
-  }
-  try {
-    return JSON.parse(data);
-  } catch (_e) {
-    return [];
-  }
-}
-
-/**
- * Añade un movimiento al historial de fianza.
- */
-async function addMovimientoFianza(concepto, importe, acumuladoDespues) {
-  const nuevoMovimiento = {
-    id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9),
-    fecha: new Date().toISOString(),
-    concepto,
-    importe,
-    acumuladoDespues
-  };
-
-  if (isSupabaseActive) {
-    try {
-      const user = await obtenerUsuarioActivo();
-      if (!user) {
-        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
-      }
-
-      const dbRow = mapearMovimientoFianzaADb(nuevoMovimiento);
-      const { error } = await supabaseClient.from('fianza_historial').insert(dbRow);
-
-      if (error) throw error;
-      return nuevoMovimiento;
-    } catch (err) {
-      console.error('Error al añadir movimiento de fianza en Supabase:', err);
-      throw err;
-    }
-  }
-
-  // Fallback LocalStorage
-  const historial = await getFianzaHistorial();
-  historial.unshift(nuevoMovimiento);
-  localStorage.setItem(FIANZA_HISTORIAL_KEY, JSON.stringify(historial));
-  return nuevoMovimiento;
-}
-
-/**
- * Elimina un movimiento del historial de fianza.
- */
-async function deleteMovimientoFianza(id) {
-  if (isSupabaseActive) {
-    try {
-      const user = await obtenerUsuarioActivo();
-      if (!user) {
-        throw new Error('No tienes permisos de edición. Inicia sesión primero.');
-      }
-
-      const { error } = await supabaseClient.from('fianza_historial').delete().eq('id', id);
-
-      if (error) throw error;
-      return;
-    } catch (err) {
-      console.error('Error al eliminar movimiento de fianza en Supabase:', err);
-      throw err;
-    }
-  }
-
-  // Fallback LocalStorage
-  let historial = await getFianzaHistorial();
-  historial = historial.filter((m) => m.id !== id);
-  localStorage.setItem(FIANZA_HISTORIAL_KEY, JSON.stringify(historial));
-}
+// -------------------------------------------------------------
+// TEMA VISUAL (LIGHT / DARK)
+// -------------------------------------------------------------
 
 /**
  * Obtiene el tema guardado localmente ('light' o 'dark').
@@ -691,6 +699,7 @@ function saveTheme(theme) {
 
 // Exportamos las funciones en el objeto window
 window.StorageModule = {
+  inicializarPersistencia,
   inicializarSupabase,
   obtenerUsuarioActivo,
   login,

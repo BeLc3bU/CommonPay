@@ -21,7 +21,10 @@ export default [
       }
     },
     rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }
+      ],
       'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
       'semi': ['error', 'always'],
       'quotes': ['error', 'single', { 'avoidEscape': true }]
