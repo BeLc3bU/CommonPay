@@ -106,22 +106,10 @@ function calcularDesgloseMes(mesIndex, config) {
       }
     }
   } else if (fianzaConfig.acumulado !== undefined) {
-    // Modo automático: basado en el saldo acumulado explícito
+    // Modo automático: exento únicamente si el saldo acumulado actual ya alcanzó el objetivo (ej. 450 €)
     const fianzaAcumulada = fianzaConfig.acumulado;
     const fianzaObjetivo = fianzaConfig.objetivo !== undefined ? fianzaConfig.objetivo : 450.0;
-    const fianzaAportacion =
-      fianzaConfig.aportacionMensualPersona !== undefined
-        ? fianzaConfig.aportacionMensualPersona
-        : 10.0;
-
-    const mesExencion = calcularMesExencionFianza(
-      fianzaAcumulada,
-      fianzaObjetivo,
-      fianzaAportacion
-    );
-    if (mesExencion !== null) {
-      fianzaExenta = mesIndex >= mesExencion;
-    }
+    fianzaExenta = fianzaAcumulada >= fianzaObjetivo;
   }
 
   const fianzaIndividualCents = fianzaExenta ? 0 : toCentavos(fianzaConfig.aportacionMensualPersona);

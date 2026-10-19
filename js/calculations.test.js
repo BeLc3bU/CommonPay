@@ -258,34 +258,28 @@ describe('Cálculos Financieros (calculations.js)', () => {
     });
 
     describe('Integración con calcularDesgloseMes()', () => {
-      it('debe incluir fianza en meses previos y eximirla a partir del mes en que se alcanza el objetivo (modo auto)', () => {
+      it('debe incluir fianza si el saldo acumulado actual es inferior a 450 € (ej. 430 €) y eximirla al llegar a 450 €', () => {
         const { calcularDesgloseMes } = CalculationsModule;
-        // Con acumulado = 410 €, meses 0 y 1 aportan fianza; mes 2 en adelante queda exento
         const configAuto = JSON.parse(JSON.stringify(baseConfig));
-        configAuto.fianza.acumulado = 410.0;
+        configAuto.fianza.acumulado = 430.0;
         configAuto.fianza.mesCompleto = 'auto';
 
-        // Mes 0 (Enero): debe incluir Fondo de Fianza (10 €)
-        const mes0 = calcularDesgloseMes(0, configAuto);
-        const fianzaMes0 = mes0.desgloseOlga.conceptos.find((c) => c.tipo === 'fianza');
-        expect(fianzaMes0).toBeDefined();
-        expect(fianzaMes0.valor).toBe(10.0);
-        expect(mes0.desglosePedro.conceptos.some((c) => c.tipo === 'fianza')).toBe(true);
+        // Con 430 € (aún no llega a 450 €), el mes actual debe incluir Fondo de Fianza (10 € c/u)
+        const mesActual = calcularDesgloseMes(9, configAuto); // Octubre (index 9)
+        const fianzaOlga = mesActual.desgloseOlga.conceptos.find((c) => c.tipo === 'fianza');
+        const fianzaPedro = mesActual.desglosePedro.conceptos.find((c) => c.tipo === 'fianza');
+        expect(fianzaOlga).toBeDefined();
+        expect(fianzaOlga.valor).toBe(10.0);
+        expect(fianzaPedro).toBeDefined();
+        expect(fianzaPedro.valor).toBe(10.0);
 
-        // Mes 1 (Febrero): debe incluir Fondo de Fianza (10 €)
-        const mes1 = calcularDesgloseMes(1, configAuto);
-        expect(mes1.desgloseOlga.conceptos.some((c) => c.tipo === 'fianza')).toBe(true);
-
-        // Mes 2 (Marzo): fianza al 100% -> NO debe incluir Fondo de Fianza y total debe restar 10 €
-        const mes2 = calcularDesgloseMes(2, configAuto);
-        const fianzaMes2Olga = mes2.desgloseOlga.conceptos.find((c) => c.tipo === 'fianza');
-        const fianzaMes2Pedro = mes2.desglosePedro.conceptos.find((c) => c.tipo === 'fianza');
-        expect(fianzaMes2Olga).toBeUndefined();
-        expect(fianzaMes2Pedro).toBeUndefined();
-
-        // Diferencia exacta de 10 € en los totales
-        expect(mes0.desgloseOlga.total - mes2.desgloseOlga.total).toBe(10.0);
-        expect(mes0.desglosePedro.total - mes2.desglosePedro.total).toBe(10.0);
+        // Al alcanzar los 450 € (100%), queda exento
+        configAuto.fianza.acumulado = 450.0;
+        const mesExento = calcularDesgloseMes(9, configAuto);
+        expect(mesExento.desgloseOlga.conceptos.some((c) => c.tipo === 'fianza')).toBe(false);
+        expect(mesExento.desglosePedro.conceptos.some((c) => c.tipo === 'fianza')).toBe(false);
+        expect(mesActual.desgloseOlga.total - mesExento.desgloseOlga.total).toBe(10.0);
+        expect(mesActual.desglosePedro.total - mesExento.desglosePedro.total).toBe(10.0);
       });
 
       it('debe eximir todos los meses si el saldo acumulado actual ya es >= objetivo', () => {

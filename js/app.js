@@ -811,19 +811,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     const desglose = window.CalculationsModule.calcularDesgloseMes(currentMonthIndex, appConfig);
 
+    // Verificar si el mes actual está marcado como completado en el historial
+    const registroMes = historialTransferencias.find(
+      (t) => t.mesIndex === currentMonthIndex && t.anio === currentAnio
+    );
+    const yaRegistrado = !!registroMes;
+
+    // Si el mes ya está registrado con su desglose histórico, respetar fielmente los importes y conceptos guardados
+    let desgloseOlga = desglose.desgloseOlga;
+    let desglosePedro = desglose.desglosePedro;
+    let ingresoAlquilerMes = desglose.ingresoAlquiler;
+
+    if (yaRegistrado && registroMes.desglose) {
+      if (registroMes.desglose.desgloseOlga) desgloseOlga = registroMes.desglose.desgloseOlga;
+      if (registroMes.desglose.desglosePedro) desglosePedro = registroMes.desglose.desglosePedro;
+      if (registroMes.desglose.ingresoAlquiler !== undefined) {
+        ingresoAlquilerMes = registroMes.desglose.ingresoAlquiler;
+      }
+    }
+
     // Formatear montos principales
-    totalOlgaEl.innerHTML = `${formatMoneda(desglose.desgloseOlga.total)} <span class="monto-currency">€</span>`;
-    totalPedroEl.innerHTML = `${formatMoneda(desglose.desglosePedro.total)} <span class="monto-currency">€</span>`;
+    totalOlgaEl.innerHTML = `${formatMoneda(desgloseOlga.total)} <span class="monto-currency">€</span>`;
+    totalPedroEl.innerHTML = `${formatMoneda(desglosePedro.total)} <span class="monto-currency">€</span>`;
 
     // Renderizar conceptos Olga
-    renderizarConceptos(conceptosOlgaEl, desglose.desgloseOlga.conceptos);
+    renderizarConceptos(conceptosOlgaEl, desgloseOlga.conceptos);
 
     // Renderizar conceptos Pedro
-    renderizarConceptos(conceptosPedroEl, desglose.desglosePedro.conceptos);
+    renderizarConceptos(conceptosPedroEl, desglosePedro.conceptos);
 
     // Formatear montos y conceptos Inquilinos
     if (totalInquilinosEl) {
-      totalInquilinosEl.innerHTML = `${formatMoneda(desglose.ingresoAlquiler)} <span class="monto-currency">€</span>`;
+      totalInquilinosEl.innerHTML = `${formatMoneda(ingresoAlquilerMes)} <span class="monto-currency">€</span>`;
     }
 
     if (conceptosInquilinosEl) {
@@ -831,12 +850,12 @@ document.addEventListener('DOMContentLoaded', () => {
         {
           nombre: 'Cuota Alquiler Mensual',
           tipo: 'alquiler',
-          valor: desglose.ingresoAlquiler
+          valor: ingresoAlquilerMes
         },
         {
           nombre: 'Aportación a Hipoteca',
           tipo: 'comun',
-          valor: desglose.ingresoAlquiler
+          valor: ingresoAlquilerMes
         }
       ];
       renderizarConceptos(conceptosInquilinosEl, conceptosInquilinos);
@@ -865,12 +884,6 @@ document.addEventListener('DOMContentLoaded', () => {
           'Ingreso directo a cuenta común el día 15 para amortizar la hipoteca.';
       }
     }
-
-    // Verificar si el mes actual está marcado como completado en el historial
-    const registroMes = historialTransferencias.find(
-      (t) => t.mesIndex === currentMonthIndex && t.anio === currentAnio
-    );
-    const yaRegistrado = !!registroMes;
 
     // Configurar input de ingreso de Olga
     let ingresoOlgaMes;
@@ -914,7 +927,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const superavitAcumulado = appConfig.gastosPersonales?.olga?.superavit || 0;
     const superavitMes = window.CalculationsModule.calcularSuperavit(
       ingresoOlgaMes,
-      desglose.desgloseOlga.total
+      desgloseOlga.total
     );
 
     if (olgaSuperavitBadge) {
@@ -1433,12 +1446,30 @@ document.addEventListener('DOMContentLoaded', () => {
     let totalPedroAnual = 0;
     let totalExtraordinarios = 0;
 
-    if (appConfig && appConfig.fianza) {
-      appConfig.fianza.acumulado = fianzaAcumulado;
-    }
+    let fianzaSimulada = fianzaAcumulado;
 
     for (let m = 0; m < 12; m++) {
-      const desg = window.CalculationsModule.calcularDesgloseMes(m, appConfig);
+      const registro = historialTransferencias.find(
+        (t) => t.mesIndex === m && t.anio === currentAnio
+      );
+      let desg;
+
+      if (registro && registro.desglose) {
+        desg = registro.desglose;
+      } else {
+        const configMes = JSON.parse(JSON.stringify(appConfig));
+        if (configMes.fianza) {
+          configMes.fianza.acumulado = fianzaSimulada;
+        }
+        desg = window.CalculationsModule.calcularDesgloseMes(m, configMes);
+        const fianzaMes = desg.fianzaExenta ? 0 : (appConfig.fianza?.aportacionMensualPersona || 10.0);
+        if (fianzaMes > 0) {
+          const aporteTotal = fianzaMes * 2;
+          const meta = appConfig.fianza?.objetivo || 450.0;
+          fianzaSimulada = Math.min(meta, window.CalculationsModule.round(fianzaSimulada + aporteTotal));
+        }
+      }
+
       totalOlgaAnual += desg.desgloseOlga.total;
       totalPedroAnual += desg.desglosePedro.total;
 
@@ -1466,10 +1497,6 @@ document.addEventListener('DOMContentLoaded', () => {
       miGrafico.destroy();
     }
 
-    if (appConfig && appConfig.fianza) {
-      appConfig.fianza.acumulado = fianzaAcumulado;
-    }
-
     const dataOlga = [];
     const dataPedro = [];
 
@@ -1478,8 +1505,30 @@ document.addEventListener('DOMContentLoaded', () => {
     const textThemeColor = isDark ? '#94a3b8' : '#64748b';
     const gridThemeColor = isDark ? '#1e293b' : '#e2e8f0';
 
+    let fianzaSimuladaGrafico = fianzaAcumulado;
+
     for (let m = 0; m < 12; m++) {
-      const desg = window.CalculationsModule.calcularDesgloseMes(m, appConfig);
+      const registro = historialTransferencias.find(
+        (t) => t.mesIndex === m && t.anio === currentAnio
+      );
+      let desg;
+
+      if (registro && registro.desglose) {
+        desg = registro.desglose;
+      } else {
+        const configMes = JSON.parse(JSON.stringify(appConfig));
+        if (configMes.fianza) {
+          configMes.fianza.acumulado = fianzaSimuladaGrafico;
+        }
+        desg = window.CalculationsModule.calcularDesgloseMes(m, configMes);
+        const fianzaMes = desg.fianzaExenta ? 0 : (appConfig.fianza?.aportacionMensualPersona || 10.0);
+        if (fianzaMes > 0) {
+          const aporteTotal = fianzaMes * 2;
+          const meta = appConfig.fianza?.objetivo || 450.0;
+          fianzaSimuladaGrafico = Math.min(meta, window.CalculationsModule.round(fianzaSimuladaGrafico + aporteTotal));
+        }
+      }
+
       dataOlga.push(desg.desgloseOlga.total);
       dataPedro.push(desg.desglosePedro.total);
     }
@@ -1758,12 +1807,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    if (appConfig && appConfig.fianza) {
-      appConfig.fianza.acumulado = fianzaAcumulado;
-    }
+    let fianzaSimulada = fianzaAcumulado;
 
     for (let m = 0; m < 12; m++) {
-      const desg = window.CalculationsModule.calcularDesgloseMes(m, appConfig);
+      const registro = historialTransferencias.find(
+        (t) => t.mesIndex === m && t.anio === currentAnio
+      );
+      let desg;
+
+      if (registro && registro.desglose) {
+        desg = registro.desglose;
+      } else {
+        const configMes = JSON.parse(JSON.stringify(appConfig));
+        if (configMes.fianza) {
+          configMes.fianza.acumulado = fianzaSimulada;
+        }
+        desg = window.CalculationsModule.calcularDesgloseMes(m, configMes);
+        const fianzaMes = desg.fianzaExenta ? 0 : (appConfig.fianza?.aportacionMensualPersona || 10.0);
+        if (fianzaMes > 0) {
+          const aporteTotal = fianzaMes * 2;
+          const meta = appConfig.fianza?.objetivo || 450.0;
+          fianzaSimulada = Math.min(meta, window.CalculationsModule.round(fianzaSimulada + aporteTotal));
+        }
+      }
+
       const conceptos = esOlga ? desg.desgloseOlga.conceptos : desg.desglosePedro.conceptos;
       const total = esOlga ? desg.desgloseOlga.total : desg.desglosePedro.total;
 
@@ -2214,12 +2281,30 @@ document.addEventListener('DOMContentLoaded', () => {
     let totalExtra = 0;
     let filasHTML = '';
 
-    if (appConfig && appConfig.fianza) {
-      appConfig.fianza.acumulado = fianzaAcumulado;
-    }
+    let fianzaSimulada = fianzaAcumulado;
 
     for (let m = 0; m < 12; m++) {
-      const desg = window.CalculationsModule.calcularDesgloseMes(m, appConfig);
+      const registro = historialTransferencias.find(
+        (t) => t.mesIndex === m && t.anio === currentAnio
+      );
+      let desg;
+
+      if (registro && registro.desglose) {
+        desg = registro.desglose;
+      } else {
+        const configMes = JSON.parse(JSON.stringify(appConfig));
+        if (configMes.fianza) {
+          configMes.fianza.acumulado = fianzaSimulada;
+        }
+        desg = window.CalculationsModule.calcularDesgloseMes(m, configMes);
+        const fianzaMes = desg.fianzaExenta ? 0 : (appConfig.fianza?.aportacionMensualPersona || 10.0);
+        if (fianzaMes > 0) {
+          const aporteTotal = fianzaMes * 2;
+          const meta = appConfig.fianza?.objetivo || 450.0;
+          fianzaSimulada = Math.min(meta, window.CalculationsModule.round(fianzaSimulada + aporteTotal));
+        }
+      }
+
       const conceptos = esOlga ? desg.desgloseOlga.conceptos : desg.desglosePedro.conceptos;
       const total = esOlga ? desg.desgloseOlga.total : desg.desglosePedro.total;
 
