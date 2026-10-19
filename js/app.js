@@ -83,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const cfgComunidad = document.getElementById('cfg-comunidad');
   const cfgFianzaObjetivo = document.getElementById('cfg-fianza-objetivo');
   const cfgFianzaMensual = document.getElementById('cfg-fianza-mensual');
+  const cfgFianzaMesCompleto = document.getElementById('cfg-fianza-mes-completo');
   const cfgOlgaCoche = document.getElementById('cfg-olga-coche');
   const cfgOlgaManutencion = document.getElementById('cfg-olga-manutencion');
   const cfgOlgaIngresoHabitual = document.getElementById('cfg-olga-ingreso-habitual');
@@ -160,7 +161,8 @@ document.addEventListener('DOMContentLoaded', () => {
       fianza: {
         pointer: 'fianza',
         objetivo: 450.0,
-        aportacionMensualPersona: 10.0
+        aportacionMensualPersona: 10.0,
+        mesCompleto: 'auto'
       },
       alertas: {
         mesHipoteca: 9, // Octubre
@@ -198,6 +200,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (appConfig.gastosPersonales.olga.ingresoHabitual === undefined) {
           appConfig.gastosPersonales.olga.ingresoHabitual = 550.0;
         }
+        if (!appConfig.fianza) appConfig.fianza = {};
+        if (appConfig.fianza.mesCompleto === undefined) {
+          appConfig.fianza.mesCompleto = 'auto';
+        }
       }
     } catch (e) {
       appConfig = DEFAULT_CONFIG;
@@ -208,6 +214,10 @@ document.addEventListener('DOMContentLoaded', () => {
       fianzaAcumulado = fz && parseFloat(fz) > 0 ? parseFloat(fz) : 410.0;
     } catch (e) {
       fianzaAcumulado = 410.0;
+    }
+
+    if (appConfig && appConfig.fianza) {
+      appConfig.fianza.acumulado = fianzaAcumulado;
     }
 
     try {
@@ -276,6 +286,12 @@ document.addEventListener('DOMContentLoaded', () => {
       // Sobrescribir variables de estado con la información remota
       appConfig = config;
       fianzaAcumulado = fianza;
+      if (appConfig && appConfig.fianza) {
+        appConfig.fianza.acumulado = fianzaAcumulado;
+        if (appConfig.fianza.mesCompleto === undefined) {
+          appConfig.fianza.mesCompleto = 'auto';
+        }
+      }
       fianzaHistorial = historialFianza;
       historialTransferencias = historialTrans;
       conciliaciones = conciliacionesList;
@@ -790,6 +806,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- LÓGICA VISTA: DASHBOARD ---
   function actualizarDashboardMes() {
     actualizarAlertasMes(currentMonthIndex);
+    if (appConfig && appConfig.fianza) {
+      appConfig.fianza.acumulado = fianzaAcumulado;
+    }
     const desglose = window.CalculationsModule.calcularDesgloseMes(currentMonthIndex, appConfig);
 
     // Formatear montos principales
@@ -944,6 +963,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function actualizarCalculoSuperavitOlga() {
     if (!olgaSuperavitDetail) return;
+    if (appConfig && appConfig.fianza) {
+      appConfig.fianza.acumulado = fianzaAcumulado;
+    }
     const desglose = window.CalculationsModule.calcularDesgloseMes(currentMonthIndex, appConfig);
     const cuotaTeorica = desglose.desgloseOlga.total;
     let ingreso = inputIngresoOlga ? parseFloat(inputIngresoOlga.value) : NaN;
@@ -1222,6 +1244,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- ACCIÓN COMPLETAR MES ---
   async function completarMesActual() {
     if (!isPedroEditor) return;
+    if (appConfig && appConfig.fianza) {
+      appConfig.fianza.acumulado = fianzaAcumulado;
+    }
     const desglose = window.CalculationsModule.calcularDesgloseMes(currentMonthIndex, appConfig);
     const yaRegistrado = historialTransferencias.some(
       (t) => t.mesIndex === currentMonthIndex && t.anio === currentAnio
@@ -1408,6 +1433,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let totalPedroAnual = 0;
     let totalExtraordinarios = 0;
 
+    if (appConfig && appConfig.fianza) {
+      appConfig.fianza.acumulado = fianzaAcumulado;
+    }
+
     for (let m = 0; m < 12; m++) {
       const desg = window.CalculationsModule.calcularDesgloseMes(m, appConfig);
       totalOlgaAnual += desg.desgloseOlga.total;
@@ -1435,6 +1464,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Destruir gráfico previo si existe
     if (miGrafico) {
       miGrafico.destroy();
+    }
+
+    if (appConfig && appConfig.fianza) {
+      appConfig.fianza.acumulado = fianzaAcumulado;
     }
 
     const dataOlga = [];
@@ -1540,6 +1573,12 @@ document.addEventListener('DOMContentLoaded', () => {
     cfgComunidad.value = appConfig.gastosFijos.comunidad;
     cfgFianzaObjetivo.value = appConfig.fianza.objetivo;
     cfgFianzaMensual.value = appConfig.fianza.aportacionMensualPersona;
+    if (cfgFianzaMesCompleto) {
+      cfgFianzaMesCompleto.value =
+        appConfig.fianza?.mesCompleto !== undefined
+          ? String(appConfig.fianza.mesCompleto)
+          : 'auto';
+    }
     cfgOlgaCoche.value = appConfig.gastosPersonales.olga.coche;
     cfgOlgaManutencion.value = appConfig.gastosPersonales.olga.manutencion;
     cfgOlgaIngresoHabitual.value =
@@ -1627,6 +1666,14 @@ document.addEventListener('DOMContentLoaded', () => {
     appConfig.gastosFijos.comunidad = com;
     appConfig.fianza.objetivo = fiaObj;
     appConfig.fianza.aportacionMensualPersona = fiaMen;
+    if (cfgFianzaMesCompleto) {
+      let mesComp = cfgFianzaMesCompleto.value;
+      if (mesComp !== 'auto' && mesComp !== 'nunca') {
+        const num = parseInt(mesComp, 10);
+        mesComp = isNaN(num) ? 'auto' : num;
+      }
+      appConfig.fianza.mesCompleto = mesComp;
+    }
     appConfig.gastosPersonales.olga.coche = cocheO;
     appConfig.gastosPersonales.olga.manutencion = manO;
     appConfig.gastosPersonales.olga.ingresoHabitual = ingHabO;
@@ -1711,6 +1758,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!tbody) return;
     tbody.innerHTML = '';
 
+    if (appConfig && appConfig.fianza) {
+      appConfig.fianza.acumulado = fianzaAcumulado;
+    }
+
     for (let m = 0; m < 12; m++) {
       const desg = window.CalculationsModule.calcularDesgloseMes(m, appConfig);
       const conceptos = esOlga ? desg.desgloseOlga.conceptos : desg.desglosePedro.conceptos;
@@ -1719,6 +1770,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const hipoteca = conceptos.find((c) => c.nombre.includes('Hipoteca'))?.valor || 0;
       const comunidad = conceptos.find((c) => c.nombre.includes('Comunidad'))?.valor || 0;
       const fianza = conceptos.find((c) => c.tipo === 'fianza')?.valor || 0;
+      const fianzaExenta = desg.fianzaExenta || fianza === 0;
       const coche = esOlga ? conceptos.find((c) => c.nombre.includes('Coche'))?.valor || 0 : 0;
       const manutencion = esOlga
         ? conceptos.find((c) => c.nombre.includes('Manutenci'))?.valor || 0
@@ -1769,6 +1821,15 @@ document.addEventListener('DOMContentLoaded', () => {
         ? `<td style="text-align:right;">${formatMoneda(manutencion)} €</td>`
         : '';
 
+      const tdFianza = fianzaExenta
+        ? `<td style="text-align:right;">
+          <div class="prevision-extra-cell">
+            <span style="color:var(--text-muted);">${formatMoneda(0)} €</span>
+            <span class="prevision-badge fianza-completada">100%</span>
+          </div>
+        </td>`
+        : `<td style="text-align:right;">${formatMoneda(fianza)} €</td>`;
+
       const tdExtraordinarios =
         extraordinarios > 0
           ? `<td style="text-align:right;">
@@ -1787,7 +1848,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <td class="sticky-col">${mesNombreHTML}</td>
         <td style="text-align:right;">${formatMoneda(hipoteca)} €</td>
         <td style="text-align:right;">${formatMoneda(comunidad)} €</td>
-        <td style="text-align:right;">${formatMoneda(fianza)} €</td>
+        ${tdFianza}
         ${tdCoche}
         ${tdManutencion}
         ${tdExtraordinarios}
@@ -1820,7 +1881,11 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
             <div class="prevision-concept-chip">
               <span class="chip-label">Fianza</span>
-              <span class="chip-val">${formatMoneda(fianza)} €</span>
+              <span class="chip-val">${
+                fianzaExenta
+                  ? `<span style="color:var(--text-muted);">${formatMoneda(0)} €</span> <span class="prevision-badge fianza-completada" style="margin-left:4px;">100%</span>`
+                  : `${formatMoneda(fianza)} €`
+              }</span>
             </div>
             ${
               esOlga
@@ -2149,6 +2214,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let totalExtra = 0;
     let filasHTML = '';
 
+    if (appConfig && appConfig.fianza) {
+      appConfig.fianza.acumulado = fianzaAcumulado;
+    }
+
     for (let m = 0; m < 12; m++) {
       const desg = window.CalculationsModule.calcularDesgloseMes(m, appConfig);
       const conceptos = esOlga ? desg.desgloseOlga.conceptos : desg.desglosePedro.conceptos;
@@ -2157,6 +2226,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const hipoteca = conceptos.find((c) => c.nombre.includes('Hipoteca'))?.valor || 0;
       const comunidad = conceptos.find((c) => c.nombre.includes('Comunidad'))?.valor || 0;
       const fianza = conceptos.find((c) => c.tipo === 'fianza')?.valor || 0;
+      const fianzaExenta = desg.fianzaExenta || fianza === 0;
       const coche = esOlga ? conceptos.find((c) => c.nombre.includes('Coche'))?.valor || 0 : 0;
       const manutencion = esOlga
         ? conceptos.find((c) => c.nombre.includes('Manutenci'))?.valor || 0
@@ -2177,6 +2247,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const tdManutencion = esOlga
         ? `<td style="text-align:right;padding:8px 10px;">${formatMoneda(manutencion)} €</td>`
         : '';
+
+      const tdFianzaPDF = fianzaExenta
+        ? `<td style="text-align:right;padding:8px 10px;"><span style="color:#94a3b8;">${formatMoneda(0)} €</span> <span style="font-size:8.5px;padding:1px 4px;border-radius:3px;font-weight:700;background:#d1fae5;color:#065f46;border:1px solid #a7f3d0;">100%</span></td>`
+        : `<td style="text-align:right;padding:8px 10px;">${formatMoneda(fianza)} €</td>`;
 
       let nombreBadgeExtra = '';
       let badgeExtraPDF = '';
@@ -2199,7 +2273,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <td style="padding:8px 10px;font-weight:600;">${NOMBRES_MESES[m]}</td>
           <td style="text-align:right;padding:8px 10px;">${formatMoneda(hipoteca)} €</td>
           <td style="text-align:right;padding:8px 10px;">${formatMoneda(comunidad)} €</td>
-          <td style="text-align:right;padding:8px 10px;">${formatMoneda(fianza)} €</td>
+          ${tdFianzaPDF}
           ${tdCoche}
           ${tdManutencion}
           <td style="text-align:right;padding:8px 10px;">${extraordinarios > 0 ? badgeExtraPDF + formatMoneda(extraordinarios) + ' €' : '—'}</td>

@@ -43,7 +43,8 @@ const DEFAULT_CONFIG = {
   fianza: {
     pointer: 'fianza',
     objetivo: 450.0,
-    aportacionMensualPersona: 10.0
+    aportacionMensualPersona: 10.0,
+    mesCompleto: 'auto'
   },
   alertas: {
     mesHipoteca: 9, // Octubre (sube el mes que viene)
@@ -94,6 +95,10 @@ function normalizarConfiguracion(cfg) {
   }
   if (cfg.alertas.mesHipoteca === undefined || cfg.alertas.mesHipoteca === 8) {
     cfg.alertas.mesHipoteca = 9;
+  }
+  if (!cfg.fianza) cfg.fianza = JSON.parse(JSON.stringify(DEFAULT_CONFIG.fianza));
+  if (cfg.fianza.mesCompleto === undefined) {
+    cfg.fianza.mesCompleto = 'auto';
   }
   return cfg;
 }

@@ -1829,6 +1829,11 @@ tr:hover td {
   color: #818cf8;
 }
 
+.prevision-badge.fianza-completada {
+  background-color: var(--success-light);
+  color: var(--success);
+}
+
 .prevision-extra-cell {
   display: inline-flex;
   align-items: center;

@@ -10,6 +10,39 @@ function round(num) {
 }
 
 /**
+ * Determina el primer mes (0: Enero, 11: Diciembre) a partir del cual el Fondo de Fianza está completo (100%)
+ * y por tanto exento de aportar.
+ * @param {number} acumulado - Saldo acumulado al inicio del año (o actual)
+ * @param {number} objetivo - Importe objetivo (ej. 450.00)
+ * @param {number} aportacionPersona - Aportación mensual por persona (ej. 10.00)
+ * @returns {number|null} Índice del primer mes exento (0..11) o null si no se alcanza en los 12 meses.
+ */
+function calcularMesExencionFianza(acumulado, objetivo, aportacionPersona) {
+  const toCentavos = (val) => Math.round((val || 0) * 100);
+  const objetivoCents = toCentavos(objetivo !== undefined ? objetivo : 450.0);
+  let saldoCents = toCentavos(acumulado !== undefined ? acumulado : 410.0);
+  const aporteMensualTotalCents =
+    toCentavos(aportacionPersona !== undefined ? aportacionPersona : 10.0) * 2;
+
+  if (saldoCents >= objetivoCents) {
+    return 0; // Exento desde Enero
+  }
+
+  if (aporteMensualTotalCents <= 0) {
+    return null;
+  }
+
+  for (let m = 0; m < 12; m++) {
+    saldoCents += aporteMensualTotalCents;
+    if (saldoCents >= objetivoCents) {
+      return m + 1 < 12 ? m + 1 : null;
+    }
+  }
+
+  return null;
+}
+
+/**
  * Calcula el desglose detallado de los gastos comunes, personales y extraordinarios para un mes dado.
  * @param {number} mesIndex - Índice del mes (0: Enero, 11: Diciembre)
  * @param {Object} config - Configuración de gastos
@@ -54,8 +87,44 @@ function calcularDesgloseMes(mesIndex, config) {
   const hipotecaNetaIndividualCents = Math.round(hipotecaNetaCents / 2);
   const comunidadIndividualCents = Math.round(comunidadCents / 2);
 
-  // 2. Ahorro Fianza
-  const fianzaIndividualCents = toCentavos(fianza.aportacionMensualPersona);
+  // 2. Ahorro Fianza (evaluar exención al 100%)
+  let fianzaExenta = false;
+  const fianzaConfig = fianza || {};
+  const mesCompletoConfig = fianzaConfig.mesCompleto;
+
+  if (
+    mesCompletoConfig !== undefined &&
+    mesCompletoConfig !== null &&
+    mesCompletoConfig !== 'auto'
+  ) {
+    if (mesCompletoConfig === 'nunca' || mesCompletoConfig === -1) {
+      fianzaExenta = false;
+    } else {
+      const mesNum = parseInt(mesCompletoConfig, 10);
+      if (!isNaN(mesNum) && mesNum >= 0) {
+        fianzaExenta = mesIndex >= mesNum;
+      }
+    }
+  } else if (fianzaConfig.acumulado !== undefined) {
+    // Modo automático: basado en el saldo acumulado explícito
+    const fianzaAcumulada = fianzaConfig.acumulado;
+    const fianzaObjetivo = fianzaConfig.objetivo !== undefined ? fianzaConfig.objetivo : 450.0;
+    const fianzaAportacion =
+      fianzaConfig.aportacionMensualPersona !== undefined
+        ? fianzaConfig.aportacionMensualPersona
+        : 10.0;
+
+    const mesExencion = calcularMesExencionFianza(
+      fianzaAcumulada,
+      fianzaObjetivo,
+      fianzaAportacion
+    );
+    if (mesExencion !== null) {
+      fianzaExenta = mesIndex >= mesExencion;
+    }
+  }
+
+  const fianzaIndividualCents = fianzaExenta ? 0 : toCentavos(fianzaConfig.aportacionMensualPersona);
 
   // 3. Gastos Extraordinarios aplicables a este mes
   const extraordinariosOlga = [];
@@ -99,9 +168,16 @@ function calcularDesgloseMes(mesIndex, config) {
     { nombre: 'Hipoteca Neta (50%)', valor: toEuros(hipotecaNetaIndividualCents), tipo: 'comun' },
     { nombre: 'Comunidad (50%)', valor: toEuros(comunidadIndividualCents), tipo: 'comun' },
     { nombre: 'Gastos Coche', valor: toEuros(cocheOlgaCents), tipo: 'personal' },
-    { nombre: 'Manutención', valor: toEuros(manutencionOlgaCents), tipo: 'personal' },
-    { nombre: 'Fondo de Fianza', valor: toEuros(fianzaIndividualCents), tipo: 'fianza' }
+    { nombre: 'Manutención', valor: toEuros(manutencionOlgaCents), tipo: 'personal' }
   ];
+
+  if (!fianzaExenta) {
+    conceptosOlga.push({
+      nombre: 'Fondo de Fianza',
+      valor: toEuros(fianzaIndividualCents),
+      tipo: 'fianza'
+    });
+  }
 
   // Añadir extraordinarios de Olga
   extraordinariosOlga.forEach((ext) => {
@@ -114,9 +190,16 @@ function calcularDesgloseMes(mesIndex, config) {
   // 6. Construcción del Desglose de Pedro
   const conceptosPedro = [
     { nombre: 'Hipoteca Neta (50%)', valor: toEuros(hipotecaNetaIndividualCents), tipo: 'comun' },
-    { nombre: 'Comunidad (50%)', valor: toEuros(comunidadIndividualCents), tipo: 'comun' },
-    { nombre: 'Fondo de Fianza', valor: toEuros(fianzaIndividualCents), tipo: 'fianza' }
+    { nombre: 'Comunidad (50%)', valor: toEuros(comunidadIndividualCents), tipo: 'comun' }
   ];
+
+  if (!fianzaExenta) {
+    conceptosPedro.push({
+      nombre: 'Fondo de Fianza',
+      valor: toEuros(fianzaIndividualCents),
+      tipo: 'fianza'
+    });
+  }
 
   // Añadir extraordinarios de Pedro
   extraordinariosPedro.forEach((ext) => {
@@ -143,6 +226,7 @@ function calcularDesgloseMes(mesIndex, config) {
     hipotecaNeta: toEuros(hipotecaNetaCents),
     cuotaHipotecaBase: toEuros(cuotaHipotecaCents),
     ingresoAlquiler: toEuros(ingresoAlquilerCents),
+    fianzaExenta: fianzaExenta,
     desgloseOlga: {
       conceptos: conceptosOlga,
       total: toEuros(totalOlgaCents)
@@ -186,6 +270,7 @@ function calcularDineroEsperadoCuenta(fianza, superavit) {
 // Exportamos en el objeto window
 window.CalculationsModule = {
   round,
+  calcularMesExencionFianza,
   calcularDesgloseMes,
   calcularSuperavit,
   calcularDineroEsperadoCuenta

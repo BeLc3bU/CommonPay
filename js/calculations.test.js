@@ -201,4 +201,134 @@ describe('Cálculos Financieros (calculations.js)', () => {
       expect(calcularDineroEsperadoCuenta(0.0, 115.57)).toBe(115.57);
     });
   });
+
+  describe('Exención de Fianza al 100% (450 €)', () => {
+    const baseConfig = {
+      gastosFijos: {
+        cuotaHipoteca: 716.81,
+        ingresoAlquiler: 462.0,
+        comunidad: 39.38
+      },
+      gastosPersonales: {
+        olga: { coche: 188.02, manutencion: 189.3 },
+        pedro: {}
+      },
+      gastosExtraordinarios: [],
+      fianza: {
+        pointer: 'fianza',
+        objetivo: 450.0,
+        aportacionMensualPersona: 10.0,
+        acumulado: 410.0,
+        mesCompleto: 'auto'
+      },
+      alertas: {
+        mesHipoteca: 9,
+        mesManutencion: 5,
+        mesAlquiler: 10,
+        tasaManutencion: 2.0,
+        tasaAlquiler: 2.0,
+        cuotaHipotecaNueva: 716.81
+      }
+    };
+
+    describe('Función calcularMesExencionFianza()', () => {
+      it('debe determinar correctamente el primer mes de exención según el saldo acumulado', () => {
+        const { calcularMesExencionFianza } = CalculationsModule;
+        expect(calcularMesExencionFianza).toBeTypeOf('function');
+
+        // Si ya está en 450 € o más, queda exento desde el primer mes (mes 0: Enero)
+        expect(calcularMesExencionFianza(450.0, 450.0, 10.0)).toBe(0);
+        expect(calcularMesExencionFianza(480.0, 450.0, 10.0)).toBe(0);
+
+        // Si el acumulado es 410 € y se aportan 20 €/mes (10 € c/u):
+        // Mes 0 (Ene): 410 + 20 = 430
+        // Mes 1 (Feb): 430 + 20 = 450 (alcanza el 100%)
+        // Mes 2 (Mar): exento (retorna 2)
+        expect(calcularMesExencionFianza(410.0, 450.0, 10.0)).toBe(2);
+
+        // Si el acumulado es 430 €:
+        // Mes 0 (Ene): 430 + 20 = 450
+        // Mes 1 (Feb): exento (retorna 1)
+        expect(calcularMesExencionFianza(430.0, 450.0, 10.0)).toBe(1);
+
+        // Si el acumulado es 0 €:
+        // Necesita 22.5 meses -> no se exime en el año actual (retorna null o -1)
+        expect(calcularMesExencionFianza(0.0, 450.0, 10.0)).toBeNull();
+      });
+    });
+
+    describe('Integración con calcularDesgloseMes()', () => {
+      it('debe incluir fianza en meses previos y eximirla a partir del mes en que se alcanza el objetivo (modo auto)', () => {
+        const { calcularDesgloseMes } = CalculationsModule;
+        // Con acumulado = 410 €, meses 0 y 1 aportan fianza; mes 2 en adelante queda exento
+        const configAuto = JSON.parse(JSON.stringify(baseConfig));
+        configAuto.fianza.acumulado = 410.0;
+        configAuto.fianza.mesCompleto = 'auto';
+
+        // Mes 0 (Enero): debe incluir Fondo de Fianza (10 €)
+        const mes0 = calcularDesgloseMes(0, configAuto);
+        const fianzaMes0 = mes0.desgloseOlga.conceptos.find((c) => c.tipo === 'fianza');
+        expect(fianzaMes0).toBeDefined();
+        expect(fianzaMes0.valor).toBe(10.0);
+        expect(mes0.desglosePedro.conceptos.some((c) => c.tipo === 'fianza')).toBe(true);
+
+        // Mes 1 (Febrero): debe incluir Fondo de Fianza (10 €)
+        const mes1 = calcularDesgloseMes(1, configAuto);
+        expect(mes1.desgloseOlga.conceptos.some((c) => c.tipo === 'fianza')).toBe(true);
+
+        // Mes 2 (Marzo): fianza al 100% -> NO debe incluir Fondo de Fianza y total debe restar 10 €
+        const mes2 = calcularDesgloseMes(2, configAuto);
+        const fianzaMes2Olga = mes2.desgloseOlga.conceptos.find((c) => c.tipo === 'fianza');
+        const fianzaMes2Pedro = mes2.desglosePedro.conceptos.find((c) => c.tipo === 'fianza');
+        expect(fianzaMes2Olga).toBeUndefined();
+        expect(fianzaMes2Pedro).toBeUndefined();
+
+        // Diferencia exacta de 10 € en los totales
+        expect(mes0.desgloseOlga.total - mes2.desgloseOlga.total).toBe(10.0);
+        expect(mes0.desglosePedro.total - mes2.desglosePedro.total).toBe(10.0);
+      });
+
+      it('debe eximir todos los meses si el saldo acumulado actual ya es >= objetivo', () => {
+        const { calcularDesgloseMes } = CalculationsModule;
+        const configLleno = JSON.parse(JSON.stringify(baseConfig));
+        configLleno.fianza.acumulado = 450.0;
+
+        for (let m = 0; m < 12; m++) {
+          const desg = calcularDesgloseMes(m, configLleno);
+          expect(desg.desgloseOlga.conceptos.some((c) => c.tipo === 'fianza')).toBe(false);
+          expect(desg.desglosePedro.conceptos.some((c) => c.tipo === 'fianza')).toBe(false);
+        }
+      });
+
+      it('debe respetar el mesCompleto fijado manualmente en configuración', () => {
+        const { calcularDesgloseMes } = CalculationsModule;
+        const configManual = JSON.parse(JSON.stringify(baseConfig));
+        configManual.fianza.mesCompleto = 4; // Mayo (mes 4) en adelante exento
+
+        // Mes 3 (Abril) -> paga fianza
+        const mes3 = calcularDesgloseMes(3, configManual);
+        expect(mes3.desgloseOlga.conceptos.some((c) => c.tipo === 'fianza')).toBe(true);
+
+        // Mes 4 (Mayo) -> exento
+        const mes4 = calcularDesgloseMes(4, configManual);
+        expect(mes4.desgloseOlga.conceptos.some((c) => c.tipo === 'fianza')).toBe(false);
+
+        // Mes 5 (Junio) -> exento
+        const mes5 = calcularDesgloseMes(5, configManual);
+        expect(mes5.desgloseOlga.conceptos.some((c) => c.tipo === 'fianza')).toBe(false);
+      });
+
+      it('no debe eximir fianza en ningún mes si mesCompleto es "nunca"', () => {
+        const { calcularDesgloseMes } = CalculationsModule;
+        const configNunca = JSON.parse(JSON.stringify(baseConfig));
+        configNunca.fianza.mesCompleto = 'nunca';
+
+        const mes0 = calcularDesgloseMes(0, configNunca);
+        const mes11 = calcularDesgloseMes(11, configNunca);
+        expect(mes0.desgloseOlga.conceptos.some((c) => c.tipo === 'fianza')).toBe(true);
+        expect(mes11.desgloseOlga.conceptos.some((c) => c.tipo === 'fianza')).toBe(true);
+      });
+    });
+  });
 });
+

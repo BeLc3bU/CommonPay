@@ -11,6 +11,8 @@ Este directorio centraliza todas las especificaciones, planes técnicos, tareas 
    - Migración desde Supabase a Vercel Postgres (Serverless Neon) para eliminar pausas por inactividad, con autenticación serverless y persistencia híbrida.
 3. **[002 · Input de Transferencia Real de Olga y Cálculo Dinámico](./002-input-transferencia-olga/spec.md)** ✅
    - Entrada editable del importe real transferido por Olga cada mes con cálculo en vivo de superávit/déficit y registro exacto en el historial.
+4. **[003 · Exención de Fondo de Fianza al 100% (450 €)](./003-fianza-tope-450/spec.md)** ✅
+   - Exención automática e híbrida de los 10 € mensuales de Olga y Pedro una vez el fondo alcanza el tope de 450 €, con ajuste en Dashboard y Previsión Anual.
 
 ---
 
