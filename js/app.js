@@ -2966,7 +2966,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 6. Actualización Alquiler IRAV (evento puntual el día 1 del mes configurado)
     const mesAlq = parseInt(alertas.mesAlquiler ?? 10);
     const alquilerNuevo =
-      (appConfig.gastosFijos?.ingresoAlquiler || 0) * (1 + (alertas.tasaAlquiler || 2) / 100);
+      Math.floor(((appConfig.gastosFijos?.ingresoAlquiler || 0) * (1 + (alertas.tasaAlquiler || 2) / 100)) / 10) * 10;
     eventos.push(
       vevent({
         uid: uid(),

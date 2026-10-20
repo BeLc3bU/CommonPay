@@ -152,19 +152,34 @@ describe('Cálculos Financieros (calculations.js)', () => {
       expect(manutencionJunio).toBe(198.77);
     });
 
-    it('debe aplicar la regularización por IRAV al alquiler en meses >= mesAlquiler (ej. Noviembre, index 10)', () => {
+    it('debe aplicar la regularización por IRAV al alquiler redondeando a la baja (ej. 2% de 462 = 470 en vez de 471.24)', () => {
       const { calcularDesgloseMes } = CalculationsModule;
 
       const configModificada = JSON.parse(JSON.stringify(mockConfig));
-      configModificada.alertas.tasaAlquiler = 10.0; // 10% de incremento al alquiler (462.00 * 1.10 = 508.20)
+      configModificada.alertas.tasaAlquiler = 2.0; // 2% de incremento: 462 * 1.02 = 471.24 -> redondeo a la baja = 470.00
       configModificada.alertas.mesAlquiler = 10; // Noviembre
 
       const resultadoNoviembre = calcularDesgloseMes(10, configModificada);
-      // Hipoteca = 716.81. Alquiler nuevo = 508.20. Hipoteca neta = 716.81 - 508.20 = 208.61.
-      expect(resultadoNoviembre.hipotecaNeta).toBe(208.61);
-      expect(resultadoNoviembre.ingresoAlquiler).toBe(508.2);
-      // Individual = round(208.61 / 2) = 104.31
-      expect(resultadoNoviembre.resumenComun.hipotecaNetaIndividual).toBe(104.31);
+      // Hipoteca = 716.81. Alquiler nuevo = 470.00. Hipoteca neta = 716.81 - 470.00 = 246.81.
+      expect(resultadoNoviembre.ingresoAlquiler).toBe(470.0);
+      expect(resultadoNoviembre.hipotecaNeta).toBe(246.81);
+      // Individual = round(246.81 / 2) = 123.41 (en céntimos: round(24681 / 2) = 12341 -> 123.41)
+      expect(resultadoNoviembre.resumenComun.hipotecaNetaIndividual).toBe(123.41);
+    });
+
+    it('debe aplicar la regularización por IRAV al alquiler con redondeo a la baja (múltiplo de 10) para cualquier incremento', () => {
+      const { calcularDesgloseMes } = CalculationsModule;
+
+      const configModificada = JSON.parse(JSON.stringify(mockConfig));
+      configModificada.alertas.tasaAlquiler = 10.0; // 10% de incremento: 462 * 1.10 = 508.20 -> redondeo a la baja a la decena = 500.00
+      configModificada.alertas.mesAlquiler = 10; // Noviembre
+
+      const resultadoNoviembre = calcularDesgloseMes(10, configModificada);
+      // Hipoteca = 716.81. Alquiler nuevo = 500.00. Hipoteca neta = 716.81 - 500.00 = 216.81.
+      expect(resultadoNoviembre.ingresoAlquiler).toBe(500.0);
+      expect(resultadoNoviembre.hipotecaNeta).toBe(216.81);
+      // Individual = round(216.81 / 2) = 108.41 (en céntimos: round(21681 / 2) = 10841 -> 108.41)
+      expect(resultadoNoviembre.resumenComun.hipotecaNetaIndividual).toBe(108.41);
     });
   });
 

@@ -76,7 +76,8 @@ function calcularDesgloseMes(mesIndex, config) {
   let ingresoAlquilerBase = gastosFijos.ingresoAlquiler || 0;
   if (mesIndex >= parseInt(alertas.mesAlquiler)) {
     const tasaAlq = alertas.tasaAlquiler !== undefined ? parseFloat(alertas.tasaAlquiler) : 2.0;
-    ingresoAlquilerBase = ingresoAlquilerBase * (1 + tasaAlq / 100);
+    // Redondeo a la baja para la cuota de alquiler de inquilinos
+    ingresoAlquilerBase = Math.floor((ingresoAlquilerBase * (1 + tasaAlq / 100)) / 10) * 10;
   }
 
   const cuotaHipotecaCents = toCentavos(cuotaHipotecaBase);
