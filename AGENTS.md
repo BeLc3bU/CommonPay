@@ -1,6 +1,6 @@
-# 🤖 AGENTS.md - Arnés de Desarrollo de IA para CommonPay (GitHub Spec Kit)
+# 🤖 AGENTS.md - Arnés de Desarrollo de IA para CommonPay (Organic-Driven Development (ODD - Gentle Shell))
 
-Este documento actúa como la guía técnica de referencia, system prompt persistente y marco normativo para cualquier agente inteligente que desarrolle, depure o mantenga el proyecto **CommonPay** bajo el estándar **GitHub Spec Kit** ([github/spec-kit](https://github.com/github/spec-kit)).
+Este documento actúa como la guía técnica de referencia, system prompt persistente y marco normativo para cualquier agente inteligente que desarrolle, depure o mantenga el proyecto **CommonPay** bajo el estándar **Organic-Driven Development (ODD - Gentle Shell)** ([github/spec-kit](https://github.com/github/spec-kit)).
 
 ---
 
@@ -38,7 +38,7 @@ Posee persistencia híbrida en local (`LocalStorage`) y nube (`Supabase`), con c
 ## 📂 Arquitectura del Proyecto
 ```
 CommonPay-main/
-├── .specify/            # Arnés y configuración de GitHub Spec Kit
+├── .specify/            # Arnés y configuración de Organic-Driven Development (ODD - Gentle Shell)
 │   ├── commands/        # Comandos del ciclo de vida (/speckit.*)
 │   │   ├── speckit.checklist.md
 │   │   ├── speckit.clarify.md
@@ -128,7 +128,7 @@ CommonPay-main/
 
 ## 🔄 Flujo de Trabajo Spec Kit (Spec-Driven Development)
 
-El ciclo de desarrollo sigue el flujo canónico de **GitHub Spec Kit**:
+El ciclo de desarrollo sigue el flujo canónico de **Organic-Driven Development (ODD - Gentle Shell)**:
 
 1. **`/speckit.constitution` (Constitución):** Consulta o actualización de los principios rectores en `.specify/memory/constitution.md`.
 2. **`/speckit.specify` (Especificación):** Creación del documento de requisitos `specs/NNN-nombre/spec.md` con historias de usuario y criterios de aceptación medibles.

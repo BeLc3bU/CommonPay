@@ -1,3 +1,25 @@
+# Feature: 001-vercel-postgres-migration
+
+## Objective and problem
+Migrado desde especificación SDD original en specs/001-vercel-postgres-migration.
+# Especificación: 001 - Migración de Persistencia a Vercel Postgres
+
+**Estado:** Aprobado  
+**Fecha:** 2026-09-30  
+**Autor:** Pedro Ubeda / Antigravity
+
+---
+
+## 1. Resumen y Contexto
+- **Qué:** Migrar el backend de persistencia y autenticación de Supabase a **Vercel Postgres (Serverless)** integrado nativamente con Serverless Functions en `/api/`.
+- **Por qué:** El nivel gratuito de Supabase desa
+
+## Scope and constraints
+- Proyecto: CommonPay (MamalotApp)
+- Runner de pruebas: npm run test (Vitest)
+- Entorno: Vanilla JS, Vite, Supabase / Vercel
+
+## Specs
 # Especificación: 001 - Migración de Persistencia a Vercel Postgres
 
 **Estado:** Aprobado  
@@ -50,3 +72,27 @@
 - **Cold Starts:** Al ser serverless, la primera llamada tras inactividad prolongada puede demorar ~300-600ms; el cliente debe manejar el estado de carga sin bloquear la interfaz.
 - **Límites de Hobby Plan:** Las consultas se agrupan en endpoints eficientes para minimizar conexiones.
 - **Non-Goals:** No se implementará registro de nuevos usuarios ni recuperación de contraseña por email (la app es monohogar exclusiva para Pedro y Olga).
+
+
+## Tasks
+# Tareas de Implementación: 001 - Vercel Postgres Migration
+
+**Especificación:** `specs/001-vercel-postgres-migration/spec.md`  
+**Plan:** `specs/001-vercel-postgres-migration/plan.md`
+
+---
+
+## Desglose de Tareas
+
+- [x] **TASK-01:** Instalar dependencia `@vercel/postgres` en `package.json`.
+- [x] **TASK-02:** Implementar función serverless `/api/auth.js` (login de Pedro, verificación y generación de token HMAC).
+- [x] **TASK-03:** Implementar función serverless `/api/data.js` (DDL automático para tablas `configuracion`, `historial_meses`, `fianza_historial`, `conciliaciones` y endpoints CRUD).
+- [x] **TASK-04:** Adaptar `js/storage.js` para consumir `/api/data` y `/api/auth`, manteniendo la API pública y el fallback a `LocalStorage`.
+- [x] **TASK-05:** Actualizar `index.html` retirando el script CDN de Supabase y eliminar `api/ping.js` y el cron en `vercel.json`.
+- [x] **TASK-06:** Ejecutar suite de pruebas unitarias (`npm run test`), linter (`npm run lint`) y build (`npm run build`).
+- [x] **TASK-07:** Realizar commit y push de la migración a GitHub para despliegue automático en Vercel.
+
+
+## Log
+- L1: Petición original e implementación histórica completada en SDD.
+- L2 (2026-11-04): Migración a estándar ODD (Gentle Shell). Documento consolidado en odd/tasks/001-vercel-postgres-migration.md.
