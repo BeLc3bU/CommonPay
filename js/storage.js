@@ -38,6 +38,12 @@ const DEFAULT_CONFIG = {
       nombre: 'Seguro Hogar',
       importeTotal: 108.2,
       meses: [3] // Abril
+    },
+    {
+      id: 'comunidad_extra',
+      nombre: 'Cuota Extra Comunidad',
+      importeTotal: 39.38,
+      meses: [11] // Diciembre
     }
   ],
   fianza: {
@@ -99,6 +105,16 @@ function normalizarConfiguracion(cfg) {
   if (!cfg.fianza) cfg.fianza = JSON.parse(JSON.stringify(DEFAULT_CONFIG.fianza));
   if (cfg.fianza.mesCompleto === undefined) {
     cfg.fianza.mesCompleto = 'auto';
+  }
+  if (!Array.isArray(cfg.gastosExtraordinarios)) {
+    cfg.gastosExtraordinarios = JSON.parse(JSON.stringify(DEFAULT_CONFIG.gastosExtraordinarios));
+  } else if (!cfg.gastosExtraordinarios.some((e) => e.id === 'comunidad_extra')) {
+    cfg.gastosExtraordinarios.push({
+      id: 'comunidad_extra',
+      nombre: 'Cuota Extra Comunidad',
+      importeTotal: 39.38,
+      meses: [11]
+    });
   }
   return cfg;
 }

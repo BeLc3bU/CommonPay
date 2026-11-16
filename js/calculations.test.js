@@ -114,6 +114,31 @@ describe('Cálculos Financieros (calculations.js)', () => {
       expect(resultado.desgloseOlga.total).toBe(585.53);
     });
 
+    it('debe incluir cuota adicional de comunidad extraordinaria en Diciembre (index 11)', () => {
+      const { calcularDesgloseMes } = CalculationsModule;
+      const configConComunidadExtra = JSON.parse(JSON.stringify(mockConfig));
+      configConComunidadExtra.gastosExtraordinarios.push({
+        id: 'comunidad_extra',
+        nombre: 'Comunidad Extraordinaria',
+        importeTotal: 39.38,
+        meses: [11] // Diciembre
+      });
+
+      const resultado = calcularDesgloseMes(11, configConComunidadExtra); // Diciembre
+      const extraOlga = resultado.desgloseOlga.conceptos.find(
+        (c) => c.nombre === 'Comunidad Extraordinaria'
+      );
+      const extraPedro = resultado.desglosePedro.conceptos.find(
+        (c) => c.nombre === 'Comunidad Extraordinaria'
+      );
+
+      expect(extraOlga).toBeDefined();
+      expect(extraPedro).toBeDefined();
+      // 39.38 / 2 = 19.69 para cada uno
+      expect(extraOlga.valor).toBe(19.69);
+      expect(extraPedro.valor).toBe(19.69);
+    });
+
     it('debe aplicar la regularización de la hipoteca en meses >= mesHipoteca (ej. Septiembre, index 8)', () => {
       const { calcularDesgloseMes } = CalculationsModule;
 

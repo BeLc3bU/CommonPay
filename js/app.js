@@ -90,6 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const cfgOlgaSuperavit = document.getElementById('cfg-olga-superavit');
   const cfgExtraIbi = document.getElementById('cfg-extra-ibi');
   const cfgExtraSeguro = document.getElementById('cfg-extra-seguro');
+  const cfgExtraComunidad = document.getElementById('cfg-extra-comunidad');
   const btnConfigReset = document.getElementById('btn-config-reset');
   const btnConfigGuardar = document.getElementById('btn-config-guardar');
   const cfgAlertaHipoteca = document.getElementById('cfg-alerta-hipoteca');
@@ -156,6 +157,12 @@ document.addEventListener('DOMContentLoaded', () => {
           nombre: 'Seguro Hogar',
           importeTotal: 108.2,
           meses: [3]
+        },
+        {
+          id: 'comunidad_extra',
+          nombre: 'Cuota Extra Comunidad',
+          importeTotal: 39.38,
+          meses: [11]
         }
       ],
       fianza: {
@@ -203,6 +210,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!appConfig.fianza) appConfig.fianza = {};
         if (appConfig.fianza.mesCompleto === undefined) {
           appConfig.fianza.mesCompleto = 'auto';
+        }
+        if (!Array.isArray(appConfig.gastosExtraordinarios)) {
+          appConfig.gastosExtraordinarios = JSON.parse(JSON.stringify(DEFAULT_CONFIG.gastosExtraordinarios));
+        } else if (!appConfig.gastosExtraordinarios.some((e) => e.id === 'comunidad_extra')) {
+          appConfig.gastosExtraordinarios.push({
+            id: 'comunidad_extra',
+            nombre: 'Cuota Extra Comunidad',
+            importeTotal: 39.38,
+            meses: [11]
+          });
         }
       }
     } catch (e) {
@@ -359,6 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
       cfgOlgaSuperavit,
       cfgExtraIbi,
       cfgExtraSeguro,
+      cfgExtraComunidad,
       cfgAlertaHipoteca,
       cfgAlertaManutencion,
       cfgAlertaAlquiler,
@@ -1642,9 +1660,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Buscar extraordinarios
     const ibi = appConfig.gastosExtraordinarios.find((e) => e.id === 'ibi');
     const seguro = appConfig.gastosExtraordinarios.find((e) => e.id === 'seguro_hogar');
+    const comExtra = appConfig.gastosExtraordinarios.find((e) => e.id === 'comunidad_extra');
 
     cfgExtraIbi.value = ibi ? ibi.importeTotal : 0;
     cfgExtraSeguro.value = seguro ? seguro.importeTotal : 0;
+    if (cfgExtraComunidad) {
+      cfgExtraComunidad.value = comExtra ? comExtra.importeTotal : 0;
+    }
 
     // Cargar meses de regularización y alertas
     const alertas = appConfig.alertas || {
@@ -1679,6 +1701,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const superavitO = parseFloat(cfgOlgaSuperavit.value);
     const ibiTotal = parseFloat(cfgExtraIbi.value);
     const seguroTotal = parseFloat(cfgExtraSeguro.value);
+    const comExtraTotal = cfgExtraComunidad ? parseFloat(cfgExtraComunidad.value) : 0;
 
     // Validaciones
     const cuotaHipNueva = parseFloat(cfgHipotecaNueva.value);
@@ -1697,6 +1720,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ingHabO,
         ibiTotal,
         seguroTotal,
+        comExtraTotal,
         cuotaHipNueva,
         ipcTasa,
         iravTasa
@@ -1734,6 +1758,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const seguro = appConfig.gastosExtraordinarios.find((e) => e.id === 'seguro_hogar');
     if (seguro) seguro.importeTotal = seguroTotal;
+
+    const comExtra = appConfig.gastosExtraordinarios.find((e) => e.id === 'comunidad_extra');
+    if (comExtra) {
+      comExtra.importeTotal = comExtraTotal;
+    } else if (comExtraTotal > 0) {
+      appConfig.gastosExtraordinarios.push({
+        id: 'comunidad_extra',
+        nombre: 'Cuota Extra Comunidad',
+        importeTotal: comExtraTotal,
+        meses: [11]
+      });
+    }
 
     // Guardar meses de regularización y alertas
     if (!appConfig.alertas) appConfig.alertas = {};
@@ -2094,9 +2130,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const notaTexto = document.getElementById('prevision-nota-texto');
     if (notaTexto) {
       if (esOlga) {
-        notaTexto.innerHTML = `<strong>Olga:</strong> Los gastos comunes (Hipoteca Neta y Comunidad) se calculan al 50%. Los gastos personales incluyen coche y manutención, esta última se actualiza según IPC en ${NOMBRES_MESES[parseInt(alertas.mesManutencion)]}. Los extraordinarios (IBI, Seguro) se prorratean entre ambas personas en los meses correspondientes. La fila resaltada indica el mes actual.`;
+        notaTexto.innerHTML = `<strong>Olga:</strong> Los gastos comunes (Hipoteca Neta y Comunidad) se calculan al 50%. Los gastos personales incluyen coche y manutención, esta última se actualiza según IPC en ${NOMBRES_MESES[parseInt(alertas.mesManutencion)]}. Los extraordinarios (IBI, Seguro, Cuota Extra de Comunidad) se prorratean entre ambas personas en los meses correspondientes. La fila resaltada indica el mes actual.`;
       } else {
-        notaTexto.innerHTML = `<strong>Pedro:</strong> Los gastos comunes (Hipoteca Neta y Comunidad) se calculan al 50%. Pedro no tiene gastos personales fijos asignados actualmente. Los extraordinarios (IBI, Seguro) se prorratean en los meses configurados. La hipoteca se revisa en ${NOMBRES_MESES[parseInt(alertas.mesHipoteca)]} y el alquiler en ${NOMBRES_MESES[parseInt(alertas.mesAlquiler)]}. La fila resaltada indica el mes actual.`;
+        notaTexto.innerHTML = `<strong>Pedro:</strong> Los gastos comunes (Hipoteca Neta y Comunidad) se calculan al 50%. Pedro no tiene gastos personales fijos asignados actualmente. Los extraordinarios (IBI, Seguro, Cuota Extra de Comunidad) se prorratean en los meses configurados. La hipoteca se revisa en ${NOMBRES_MESES[parseInt(alertas.mesHipoteca)]} y el alquiler en ${NOMBRES_MESES[parseInt(alertas.mesAlquiler)]}. La fila resaltada indica el mes actual.`;
       }
     }
   }

@@ -594,7 +594,7 @@
                   <i data-lucide="alert-circle"></i>
                 </div>
                 <div class="stat-info">
-                  <div class="stat-label">Total Gastos Extraordinarios (IBI + Seguro)</div>
+                  <div class="stat-label">Total Gastos Extraordinarios (IBI + Seguro + Extras)</div>
                   <div class="stat-value" id="stats-total-extra">0,00 €</div>
                 </div>
               </div>
@@ -994,6 +994,27 @@
                   <input
                     type="number"
                     id="cfg-extra-seguro"
+                    class="input-control"
+                    step="0.01"
+                    min="0"
+                  />
+                  <span class="input-suffix">€</span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div>
+                  <label class="form-label" style="display: block; font-weight: 600"
+                    >Cuota Extra Comunidad (Diciembre)</label
+                  >
+                  <span style="font-size: 0.75rem; color: var(--text-muted)"
+                    >Cargada en Diciembre y prorrateada al 50%</span
+                  >
+                </div>
+                <div class="input-wrapper">
+                  <input
+                    type="number"
+                    id="cfg-extra-comunidad"
                     class="input-control"
                     step="0.01"
                     min="0"
