@@ -1,4 +1,4 @@
-const CACHE_NAME = 'commonpay-cache-v1';
+const CACHE_NAME = 'commonpay-cache-v2';
 const ASSETS = [
   '/',
   '/index.html',

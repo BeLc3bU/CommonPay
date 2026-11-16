@@ -1898,6 +1898,9 @@ document.addEventListener('DOMContentLoaded', () => {
       } else if (m === 3) {
         nombreBadgeExtra = 'Seguro de Casa';
         claseBadgeExtra = 'seguro';
+      } else if (m === 11 && conceptos.some((c) => c.nombre.includes('Comunidad Extra') || c.nombre.includes('Extra Comunidad'))) {
+        nombreBadgeExtra = 'Extra Comunidad';
+        claseBadgeExtra = 'extra';
       } else if (extraordinarios > 0) {
         const extraConcepto = conceptos.find((c) => c.tipo === 'extraordinario');
         nombreBadgeExtra = extraConcepto ? extraConcepto.nombre : 'Extra';
@@ -2383,6 +2386,10 @@ document.addEventListener('DOMContentLoaded', () => {
         nombreBadgeExtra = 'Seguro de Casa';
         badgeExtraPDF =
           '<span style="font-size:8.5px;padding:1px 4px;border-radius:3px;font-weight:700;margin-right:4px;background:#e0e7ff;color:#4338ca;border:1px solid #c7d2fe;">Seguro de Casa</span>';
+      } else if (m === 11 && conceptos.some((c) => c.nombre.includes('Comunidad Extra') || c.nombre.includes('Extra Comunidad'))) {
+        nombreBadgeExtra = 'Extra Comunidad';
+        badgeExtraPDF =
+          '<span style="font-size:8.5px;padding:1px 4px;border-radius:3px;font-weight:700;margin-right:4px;background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;">Extra Comunidad</span>';
       } else if (extraordinarios > 0) {
         const extraConcepto = conceptos.find((c) => c.tipo === 'extraordinario');
         nombreBadgeExtra = extraConcepto ? extraConcepto.nombre : 'Extra';
